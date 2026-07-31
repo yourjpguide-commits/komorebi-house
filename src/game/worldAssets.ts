@@ -5,6 +5,9 @@ export interface WorldBackplateAsset {
   readonly path: string;
 }
 
+const publicAsset = (path: string): string =>
+  `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
+
 /**
  * Stable runtime keys keep authored world art replaceable without letting
  * filenames leak into scene or simulation code.
@@ -13,19 +16,19 @@ export const WORLD_BACKPLATES: Readonly<Record<LocationId, WorldBackplateAsset>>
   Object.freeze({
     room: Object.freeze({
       key: 'koh:world:room',
-      path: '/assets/world/room-base.png',
+      path: publicAsset('assets/world/room-base.png'),
     }),
     garden: Object.freeze({
       key: 'koh:world:garden',
-      path: '/assets/world/garden-base.png',
+      path: publicAsset('assets/world/garden-base.png'),
     }),
     cafe: Object.freeze({
       key: 'koh:world:cafe',
-      path: '/assets/world/cafe-base.png',
+      path: publicAsset('assets/world/cafe-base.png'),
     }),
     park: Object.freeze({
       key: 'koh:world:park',
-      path: '/assets/world/park-base.png',
+      path: publicAsset('assets/world/park-base.png'),
     }),
   });
 

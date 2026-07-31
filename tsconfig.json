@@ -14,7 +14,7 @@
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
-    "types": ["vitest/globals", "node"],
+    "types": ["vite/client", "vitest/globals", "node"],
     "skipLibCheck": true
   },
   "include": [

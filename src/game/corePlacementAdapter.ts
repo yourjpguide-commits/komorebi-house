@@ -54,18 +54,26 @@ function footprintOffsets(definition: DecorDefinition): GridPoint[] {
   return cells;
 }
 
-function toCoreItemDefinition(definition: DecorDefinition): CoreItemDefinition {
+export function placementLayerForDecor(
+  definition: DecorDefinition | undefined,
+): string {
+  if (!definition) return 'object';
   const isFloorLayer = definition.category === 'soft';
   const isTabletop =
     definition.category === 'tabletop' ||
     definition.placementSurface === 'tabletop';
+  return isFloorLayer ? 'floor' : isTabletop ? 'tabletop' : 'object';
+}
+
+function toCoreItemDefinition(definition: DecorDefinition): CoreItemDefinition {
+  const placementLayer = placementLayerForDecor(definition);
   return {
     id: definition.id,
     footprint: footprintOffsets(definition),
     allowedZoneKinds: definition.locations,
-    placementLayer: isFloorLayer ? 'floor' : isTabletop ? 'tabletop' : 'object',
+    placementLayer,
     blocksPlacement: true,
-    blocksMovement: !isFloorLayer && !isTabletop,
+    blocksMovement: placementLayer === 'object',
     rotatable: true,
   };
 }

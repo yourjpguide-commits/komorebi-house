@@ -7,6 +7,7 @@ import {
 } from '../ui';
 import { sceneDecorById } from './catalogAdapter';
 import { createGameConfig } from './config';
+import { placementLayerForDecor } from './corePlacementAdapter';
 import {
   DEFAULT_SAVE_KEY,
   DEPTH,
@@ -241,7 +242,7 @@ function initialShell(root: HTMLElement, recoveredSave: boolean): {
     overflow: 'hidden',
     color: '#f8efd3',
     background:
-      'linear-gradient(180deg, rgba(18,35,31,.08), rgba(12,25,23,.78)), url("/assets/komorebi-title-plate-morning-clean.png") center / cover',
+      `linear-gradient(180deg, rgba(18,35,31,.08), rgba(12,25,23,.78)), url("${import.meta.env.BASE_URL}assets/komorebi-title-plate-morning-clean.png") center / cover`,
   });
 
   return { canvasHost, uiHost, startScreen, startButton };
@@ -614,6 +615,9 @@ export function bootstrapGame(root: HTMLElement): GameBootstrapHandle {
         },
         inventory: snapshot?.ownedItems ?? {},
         placements: placements.map((placement) => ({
+          placementLayer: placementLayerForDecor(
+            sceneDecorById(placement.itemId),
+          ),
           id: placement.instanceId,
           sku: placement.itemId,
           zone: placement.location,

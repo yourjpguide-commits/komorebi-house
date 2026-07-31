@@ -26,6 +26,7 @@ type QaState = {
     id: string;
     sku: string;
     zone: string;
+    placementLayer: string;
     tileX: number;
     tileY: number;
     rotation: number;
@@ -524,19 +525,32 @@ test("a rapid double purchase is one atomic economy transaction", async ({ page 
 
 test("insufficient funds reject the purchase with zero state mutation", async ({ page }) => {
   await openFreshGame(page);
-  const before = await qaState(page);
   const items = await catalogItems(page);
-  const unaffordable = items.find((item) => item.price > before.economy.coins);
+  let before = await qaState(page);
+  let unaffordable = items.find((item) => item.price > before.economy.coins);
 
-  expect(
-    unaffordable,
-    "The release catalog needs at least one item above the fresh-save balance to exercise insufficient funds.",
-  ).toBeTruthy();
+  for (let purchase = 0; !unaffordable && purchase < items.length; purchase += 1) {
+    const spend = items
+      .filter(
+        (item) =>
+          item.price > 0 && item.price <= before.economy.coins,
+      )
+      .sort((left, right) => right.price - left.price)[0];
+    expect(
+      spend,
+      "The catalog cannot reach an insufficient-funds state through normal purchases.",
+    ).toBeTruthy();
+    await buyOne(page, spend!);
+    before = await qaState(page);
+    unaffordable = items.find((item) => item.price > before.economy.coins);
+  }
+
+  expect(unaffordable, "No unaffordable item exists after normal spending.").toBeTruthy();
 
   const priorCount = before.inventory[unaffordable!.sku] ?? 0;
   await unaffordable!.card.getByTestId(`buy-${unaffordable!.sku}`).click();
   await expect(page.getByTestId("toast-region")).toContainText(
-    /not enough|insufficient|足り|不足/i,
+    /not enough|insufficient|few more hikari|足り|不足/i,
   );
   const after = await qaState(page);
   expect(after.economy.coins).toBe(before.economy.coins);
@@ -574,9 +588,15 @@ test("invalid placement is blocked and rapid valid confirm creates one object", 
   expect(afterPlacement.placements.filter((entry) => entry.id === placed.id)).toHaveLength(1);
 
   const allCells = afterPlacement.placements.flatMap((entry) =>
-    entry.footprint.map((cell) => `${entry.zone}:${cell.x}:${cell.y}`),
+    entry.footprint.map(
+      (cell) =>
+        `${entry.zone}:${entry.placementLayer}:${cell.x}:${cell.y}`,
+    ),
   );
-  expect(new Set(allCells).size, "Two committed footprints overlap.").toBe(allCells.length);
+  expect(
+    new Set(allCells).size,
+    "Two committed footprints overlap on the same placement layer.",
+  ).toBe(allCells.length);
 });
 
 test("moving then cancelling is lossless; moving then confirming is free", async ({ page }) => {
@@ -796,23 +816,37 @@ test.describe("390x844 mobile", () => {
 
     await expect(page.getByTestId("mobile-dpad")).toBeVisible();
     const controls = page.locator('button:visible, [role="button"]:visible');
-    const count = await controls.count();
-    expect(count).toBeGreaterThan(0);
-    for (let index = 0; index < count; index += 1) {
-      const control = controls.nth(index);
-      const box = await control.boundingBox();
-      expect(box, `Visible control ${index} has no box.`).not.toBeNull();
-      expect(box!.width, `Visible control ${index} is narrower than 44px.`).toBeGreaterThanOrEqual(
+    const boxes = await controls.evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          label:
+            element.getAttribute("aria-label") ??
+            element.textContent?.trim().slice(0, 40) ??
+            element.tagName,
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        };
+      }),
+    );
+    expect(boxes.length).toBeGreaterThan(0);
+    for (const box of boxes) {
+      expect(
+        box.width,
+        `Visible control "${box.label}" is narrower than 44px.`,
+      ).toBeGreaterThanOrEqual(
         44,
       );
       expect(
-        box!.height,
-        `Visible control ${index} is shorter than 44px.`,
+        box.height,
+        `Visible control "${box.label}" is shorter than 44px.`,
       ).toBeGreaterThanOrEqual(44);
-      expect(box!.x).toBeGreaterThanOrEqual(0);
-      expect(box!.y).toBeGreaterThanOrEqual(0);
-      expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-      expect(box!.y + box!.height).toBeLessThanOrEqual(844);
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(390);
+      expect(box.y + box.height).toBeLessThanOrEqual(844);
     }
   });
 
@@ -885,13 +919,19 @@ test.describe("390x844 mobile", () => {
       fullPage: true,
     });
 
-    await openCustomizer(page);
-    const panel = await page.getByTestId("catalog-panel").boundingBox();
-    expect(panel).not.toBeNull();
-    expect(panel!.x).toBeGreaterThanOrEqual(0);
-    expect(panel!.y).toBeGreaterThanOrEqual(0);
-    expect(panel!.x + panel!.width).toBeLessThanOrEqual(390);
-    expect(panel!.y + panel!.height).toBeLessThanOrEqual(844);
+    const panelLocator = page.getByTestId("catalog-panel");
+    await page.locator('[data-action="customizer-open"]:visible').click();
+    const expectPanelContained = async (): Promise<void> => {
+      const panel = await panelLocator.boundingBox();
+      expect(panel).not.toBeNull();
+      expect(panel!.x).toBeGreaterThanOrEqual(0);
+      expect(panel!.y).toBeGreaterThanOrEqual(0);
+      expect(panel!.x + panel!.width).toBeLessThanOrEqual(390);
+      expect(panel!.y + panel!.height).toBeLessThanOrEqual(844);
+    };
+    await expectPanelContained();
+    await page.waitForTimeout(220);
+    await expectPanelContained();
     await expect(page).toHaveScreenshot("mobile-customization.png", {
       fullPage: true,
     });

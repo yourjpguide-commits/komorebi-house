@@ -5130,6 +5130,12 @@
 }
 
 @media (max-width: 640px) {
+  .kh-shop {
+    animation-name: kh-fade-in;
+    animation-duration: 180ms;
+    animation-timing-function: ease-out;
+  }
+
   /*
    * Portrait phones become an intentional pocket-handheld surface. Phaser
    * already writes centering margins onto the canvas; the host must not center
@@ -5150,16 +5156,18 @@
   .kh-stage-shell::after {
     position: absolute;
     z-index: 1;
-    top: 354px;
+    /* Sit in the small breathing space under the full-width scene, not in
+       competition with the docked physical controls. */
+    top: calc(80px + (100vw * 0.5625));
     left: 50%;
     width: min(68vw, 248px);
     padding: 10px 0;
-    color: rgba(236, 218, 170, 0.33);
+    color: rgba(236, 218, 170, 0.32);
     border-top: 1px solid rgba(236, 218, 170, 0.12);
     border-bottom: 1px solid rgba(236, 218, 170, 0.08);
     content: "KOMOREBI POCKET · 静かな時間";
     font-family: var(--kh-display);
-    font-size: 0.48rem;
+    font-size: 0.42rem;
     font-weight: 800;
     letter-spacing: 0.22em;
     text-align: center;
@@ -5184,7 +5192,27 @@
 
   .kh-mobile-controls {
     display: flex;
-    bottom: calc(106px + var(--kh-safe-bottom));
+    /* Full scene framing stays intact. On a 390px-wide screen this gives the
+       D-pad a 24px visual gutter below the 16:9 canvas (including its frame). */
+    bottom: max(
+      calc(100dvh - 76px - (100vw * 0.5625) - 24px - 138px),
+      calc(82px + var(--kh-safe-bottom))
+    );
+  }
+
+  .kh-touch-actions small {
+    min-width: 40px;
+    margin-top: 6px;
+    padding: 3px 7px;
+    color: #fffaf0;
+    background: rgba(21, 30, 27, 0.86);
+    border: 1px solid rgba(255, 250, 240, 0.22);
+    border-radius: 4px;
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-align: center;
   }
 
   .kh-ui:has(.kh-scrim, .kh-dialogue, .kh-decor-tray, .kh-onboarding)
