@@ -1,0 +1,8 @@
+node_modules/
+dist/
+qa/
+test-results/
+playwright-report/
+.wrangler/
+.DS_Store
+*.log

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Komorebi House — Art Atlas</title>
+    <style>
+      :root {
+        color: #fff4d6;
+        background: #171b2d;
+        font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 24px; }
+      h1, h2 { margin: 0 0 14px; font-weight: 600; letter-spacing: .04em; }
+      h2 { margin-top: 30px; color: #f0d9ae; }
+      .environments { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); }
+      .environment, .sprite {
+        border: 1px solid #4a5260;
+        background: #242a3a;
+        box-shadow: 0 8px 24px #0d102080;
+      }
+      .environment { padding: 8px; }
+      .environment canvas {
+        display: block;
+        width: 100%;
+        max-width: 960px;
+        height: auto;
+        image-rendering: pixelated;
+      }
+      .label { padding: 7px 4px 0; color: #d3b280; }
+      .sprites { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+      .sprite { min-height: 154px; padding: 8px; display: grid; place-items: center; align-content: center; }
+      .sprite canvas { image-rendering: pixelated; margin: 8px; }
+      .sprite .label { overflow-wrap: anywhere; text-align: center; color: #f0d9ae; }
+      .avatars { display: flex; flex-wrap: wrap; gap: 10px; }
+      .avatar { padding: 12px 17px; border: 1px solid #343b4b; background: #242a3a; }
+      .avatar canvas { width: 72px; height: 96px; image-rendering: pixelated; }
+    </style>
+  </head>
+  <body>
+    <h1>Komorebi House · deterministic art atlas</h1>
+    <main id="atlas"></main>
+    <script type="module" src="./preview.ts"></script>
+  </body>
+</html>
