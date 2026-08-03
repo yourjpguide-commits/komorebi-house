@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "hero-south-v6",
+  "direction": "south",
+  "state": "double-jury-passed-south-directional-reference",
+  "runtimeIntegration": false,
+  "shippingPromotion": false,
+  "archivedAt": "2026-08-04",
+  "archive": {
+    "master": {
+      "path": "art/pipeline/approved/avatar/south/avatar-indigo-south-master.png",
+      "sha256": "a28c651c7a85f5f178ba2604bdecc3532827ce1c2420e4a01c8214cb68f1bcd7"
+    },
+    "supportShadow": {
+      "path": "art/pipeline/approved/avatar/south/avatar-indigo-support-shadow.png",
+      "sha256": "9bb7a89861ec224321c29a0e35aa62616ff6e91c0712f0c010e7ecaff32dc193"
+    },
+    "turnaroundSilhouette": {
+      "path": "art/pipeline/approved/avatar/south/avatar-indigo-turnaround-silhouette.png",
+      "sha256": "2abed2f222698fd7b611a4effb9e7841cfb02289027623a9f883aaaa074af768",
+      "shippingArt": false,
+      "directions": ["south", "west", "north", "east"]
+    }
+  },
+  "contract": {
+    "canvas": [144, 176],
+    "opaqueBounds": "50x157+47+11",
+    "anchor": [72, 168],
+    "paletteColorsIncludingTransparency": 37,
+    "alpha": "binary-only",
+    "lighting": "upper-left key with separate lower-right support shadow",
+    "garment": "one uninterrupted tailored A-line skirt ending above the knee; no shorts, split, crotch notch, or underlayer",
+    "stableEmblem": "Preserve the exact tiny gold Komorebi skirt motif cluster without elaboration or variation in any direction or frame."
+  },
+  "sourceCandidate": {
+    "candidateId": "hero-south-v5",
+    "pathAtRevisionTime": "/private/tmp/hero-south-v5-candidate-clean.png",
+    "sha256": "7ab122ca432e94100fad0d88842a664418cd9db838e6813011712918183888f4",
+    "juryVerdict": "rejected narrowly at 53/60 against a 54/60 promotion bar; all gates passed except elevated-room integration"
+  },
+  "imageGenerationLineage": {
+    "tool": "OpenAI ImageGen directed edit followed by deterministic native-pixel cleanup",
+    "generatedSourcePath": "/Users/patransd/.codex/generated_images/019fc80b-92ad-7812-973d-25fb50fc5e25/exec-bd67c31e-3cca-4443-ad97-b2522a53ab77.png",
+    "generatedSourceSha256": "5b29d0207ece3efd74f0a8a46bcdb4d407634eb5ba1b60241dbed595126a12a5",
+    "turnaroundGeneratedSourcePath": "/Users/patransd/.codex/generated_images/019fc80b-92ad-7812-973d-25fb50fc5e25/exec-cd278185-443a-4438-9c82-5906d47cb46b.png",
+    "turnaroundGeneratedSourceSha256": "2b07851982f5d0ff95cadd0264ea3feb2d926872e6efe91c398e90c5281586c3"
+  },
+  "projectionRevision": [
+    "Removed one redundant torso row and two redundant skirt-front rows, then reassembled the native sprite so both feet and the anchor remained unchanged.",
+    "Lowered the compact brow and eye clusters by one native pixel beneath a broader crown plane.",
+    "Added one-pixel upper planes to both jacket shoulders and broadened both sneaker vamps.",
+    "Extended the separate support shadow with a visible lower-right tail consistent with the upper-left key light."
+  ],
+  "juryReceipts": [
+    {
+      "jury": "visual-system-supervisor",
+      "score": 54,
+      "maximum": 60,
+      "promotionBar": 54,
+      "verdict": "pass-south-master-directional-reference",
+      "categories": {
+        "adultIdentity": 9.2,
+        "adultChibiReadability": 8.9,
+        "feminineSingleSkirtTruth": 9.7,
+        "athleticGracefulStance": 9.0,
+        "elevatedRoomProjectionPaletteGrounding": 8.7,
+        "directionalFeasibilityOriginality": 8.5
+      }
+    },
+    {
+      "jury": "room-visual-jury-01",
+      "score": 54,
+      "maximum": 60,
+      "promotionBar": 54,
+      "verdict": "pass-south-master-directional-reference",
+      "categories": {
+        "adultIdentity": 9.0,
+        "adultChibiReadability": 9.0,
+        "feminineSingleSkirtTruth": 8.5,
+        "athleticGracefulAnatomy": 9.0,
+        "roomProjectionPaletteContact": 9.5,
+        "fourDirectionReproducibilityNativeCraft": 9.0
+      }
+    }
+  ],
+  "guardrails": [
+    "Do not alter the south master during north, east, or west production.",
+    "Derive every direction and frame from this exact anchor, adult volume, skirt length, lighting, palette family, stance rhythm, shoe volume, and emblem cluster.",
+    "Every new direction and animation requires independent native-scale, in-room, and walk-cycle jury approval.",
+    "This archive does not authorize manifest, runtime, or public-asset integration."
+  ]
+}
