@@ -87,7 +87,7 @@
       "id": "patchwork-zabuton",
       "family": "starter-furniture",
       "kind": "furniture",
-      "state": "brief",
+      "state": "runtime-approved",
       "runtimeKey": "koh:decor:patchwork-zabuton",
       "nativeCanvas": [32, 17],
       "runtimeOrigin": [0.5, 1],
@@ -98,7 +98,7 @@
       "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#patchwork-zabuton", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.patchwork-zabuton"],
       "retainedBlockers": [],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true },
+      "proof": { "isolated": true, "anchor": true, "footprint": true, "runtimeCapture": true, "oldProducerDeleted": true },
       "derivedRotationCels": [
         { "rotation": 90, "runtimeKey": "koh:decor:patchwork-zabuton:r90", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r90.png", "nativeCanvas": [17, 32] },
         { "rotation": 180, "runtimeKey": "koh:decor:patchwork-zabuton:r180", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r180.png", "nativeCanvas": [32, 17] },
