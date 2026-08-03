@@ -11,8 +11,8 @@ import { placementLayerForDecor } from './corePlacementAdapter';
 import {
   DEFAULT_SAVE_KEY,
   DEPTH,
-  GAME_HEIGHT,
-  GAME_WIDTH,
+  RENDER_HEIGHT,
+  RENDER_WIDTH,
   SCENE_KEYS,
   WORLD_GRID,
 } from './constants';
@@ -560,11 +560,11 @@ export function bootstrapGame(root: HTMLElement): GameBootstrapHandle {
     return {
       screenX:
         bounds.left +
-        (((x - camera.worldView.x) * camera.zoom + camera.x) / GAME_WIDTH) *
+        (((x - camera.worldView.x) * camera.zoom + camera.x) / RENDER_WIDTH) *
           bounds.width,
       screenY:
         bounds.top +
-        (((y - camera.worldView.y) * camera.zoom + camera.y) / GAME_HEIGHT) *
+        (((y - camera.worldView.y) * camera.zoom + camera.y) / RENDER_HEIGHT) *
           bounds.height,
     };
   };

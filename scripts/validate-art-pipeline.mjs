@@ -17,7 +17,8 @@ const hashFile = async (path) =>
 
 if (manifest.schemaVersion !== 2) fail("unexpected schema version");
 if (manifest.runtime?.engine !== "phaser-3.90.0") fail("engine contract drifted");
-if (!same(manifest.runtime?.canvas, [480, 270])) fail("canvas contract drifted");
+if (!same(manifest.runtime?.simulationCanvas, [480, 270])) fail("simulation canvas contract drifted");
+if (!same(manifest.runtime?.renderCanvas, [960, 540])) fail("render canvas contract drifted");
 if (!same(manifest.runtime?.worldTile, [16, 16])) fail("world tile contract drifted");
 if (!same(manifest.runtime?.placementGrid, [8, 8])) fail("placement grid drifted");
 
@@ -36,7 +37,7 @@ for (const reference of manifest.references ?? []) {
 }
 
 const expectedAssets = new Map([
-  ["room-base", { runtimeKey: "koh:world:room", nativeCanvas: [480, 270], runtimeOrigin: [0, 0] }],
+  ["room-base", { runtimeKey: "koh:world:room", nativeCanvas: [960, 540], runtimeOrigin: [0, 0] }],
   ["round-chabudai", { runtimeKey: "koh:decor:round-chabudai", nativeCanvas: [58, 34], runtimeOrigin: [0.5, 1], footprint: [32, 24], starterPlacement: [294, 190, 0] }],
   ["patchwork-zabuton", { runtimeKey: "koh:decor:patchwork-zabuton", nativeCanvas: [32, 17], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [294, 210, 0] }],
   ["folded-futon", { runtimeKey: "koh:decor:folded-futon", nativeCanvas: [62, 35], runtimeOrigin: [0.5, 1], footprint: [32, 12], starterPlacement: [194, 212, 0] }],
@@ -129,4 +130,4 @@ if (manifest.acceptance?.visualCategoryMinimum !== 8) fail("visual category thre
 if (!same(manifest.acceptance?.desktopCapture, [1280, 720, 1])) fail("desktop capture contract drifted");
 if (!same(manifest.acceptance?.mobileCapture, [390, 844, 2])) fail("mobile capture contract drifted");
 
-console.log(`Art pipeline OK: six exact PNGs locked, ${ids.size} single-authority rows, strict furniture cutover ready.`);
+console.log(`Art pipeline OK: 480x270 simulation, 960x540 render, six exact PNGs locked, ${ids.size} single-authority rows, strict furniture cutover ready.`);

@@ -11,10 +11,11 @@
     "runtime": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["engine", "canvas", "worldTile", "placementGrid", "geometrySourceCommit"],
+      "required": ["engine", "simulationCanvas", "renderCanvas", "worldTile", "placementGrid", "geometrySourceCommit"],
       "properties": {
         "engine": { "const": "phaser-3.90.0" },
-        "canvas": { "const": [480, 270] },
+        "simulationCanvas": { "const": [480, 270] },
+        "renderCanvas": { "const": [960, 540] },
         "worldTile": { "const": [16, 16] },
         "placementGrid": { "const": [8, 8] },
         "geometrySourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }

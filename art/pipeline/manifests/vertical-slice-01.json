@@ -3,7 +3,8 @@
   "sliceId": "vertical-slice-01",
   "runtime": {
     "engine": "phaser-3.90.0",
-    "canvas": [480, 270],
+    "simulationCanvas": [480, 270],
+    "renderCanvas": [960, 540],
     "worldTile": [16, 16],
     "placementGrid": [8, 8],
     "geometrySourceCommit": "05a55d847c66e095607f00f61e49271a034dd8a6"
@@ -11,7 +12,7 @@
   "geometryLock": {
     "files": [
       { "path": "src/game/locations.ts", "sha256": "765ecc1cdc8ef431f0a8e3cf731d37dd1dd32f7eaa729192588c3835c4bac31d" },
-      { "path": "src/game/constants.ts", "sha256": "658c6f9c349b6a1e6a9e7867112deefe21211b01b5de829d9ebbd27945ab8e71" },
+      { "path": "src/game/constants.ts", "sha256": "d15f9e4b993c6ad618bc8f852a9b7daa7b78c4e924b24f43af5422506ce1bf39" },
       { "path": "src/game/storage.ts", "sha256": "dba990a77d9125a02b4a0013c24b5bd32ff4ec1a54159b1d5d66daef32631fe6" },
       { "path": "src/art/avatar.ts", "sha256": "6d406315ab76c3c908386db96a460bbfefb895eeafc8d9720906e21c9b9f73d4" }
     ],
@@ -55,9 +56,9 @@
       "id": "room-base",
       "family": "room-architecture",
       "kind": "architecture",
-      "state": "runtime-approved",
+      "state": "candidate",
       "runtimeKey": "koh:world:room",
-      "nativeCanvas": [480, 270],
+      "nativeCanvas": [960, 540],
       "runtimeOrigin": [0, 0],
       "currentProducer": "public/assets/world/room-base.png",
       "replacementTarget": "public/assets/world/room-base.png",

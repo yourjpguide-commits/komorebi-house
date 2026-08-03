@@ -10,7 +10,7 @@
 
 Rebuild the current room, engawa, and visible garden in an original CityPop-inflected pixel-art language while preserving the shipped Phaser game and its customization loop.
 
-The V2 art phase does not replace Phaser, redesign the maps, alter the 480 × 270 logical canvas, change placement coordinates, or replatform gameplay. Code remains authoritative for topology, collision, navigation, placement, draw order, economy, persistence, and interaction. Image generation proposes appearance only.
+The V2 art phase does not replace Phaser, redesign the maps, alter the 480 × 270 simulation canvas, change placement coordinates, or replatform gameplay. The simulation is projected at an exact 2× camera zoom into a 960 × 540 render surface. Code remains authoritative for topology, collision, navigation, placement, draw order, economy, persistence, and interaction. Image generation proposes appearance only.
 
 Whole generated furnished scenes are concept references, never runtime plates or extraction sources. Runtime art is assembled from isolated, metadata-bound assets.
 
@@ -25,12 +25,13 @@ Whole generated furnished scenes are concept references, never runtime plates or
 ## 3. Runtime contract that remains locked
 
 - Phaser 3.90 with TypeScript and Vite.
-- 480 × 270 logical world, 16 × 16 world tiles, 8 × 8 placement grid, and nearest-neighbor display.
+- 480 × 270 simulation world, 16 × 16 world tiles, and 8 × 8 placement grid.
+- 960 × 540 render surface, fixed whole-room 2× camera projection, and nearest-neighbor display.
 - Current room/garden topology, entrances, walkable areas, placement zones, and save semantics.
 - Authored facings; no runtime raster rotation.
 - Contact anchors and spatial metadata determine placement and depth.
 
-Any proposed resolution, projection, renderer, or topology change requires a separate runtime bakeoff. It may not enter through the art pipeline.
+Any further resolution, projection, renderer, or topology change requires a separate runtime bakeoff. It may not enter through an asset promotion.
 
 ## 4. Asset units
 
@@ -112,7 +113,7 @@ art/
 public/assets/v2/      # runtime-approved production assets only
 ```
 
-The active implementation branch is `art/citypop-pipeline-v2`. No file or commit from the deleted 960×540/P128 probe or the deleted SakuraStudy cozy-probe machinery may be imported.
+The active implementation branch is `art/citypop-pipeline-v2`. No file or commit from the deleted P128 probe or the deleted SakuraStudy cozy-probe machinery may be imported. The current 960 × 540 room candidate is an independent export from the approved original ImageGen source.
 
 ## 10. Stop and rollback conditions
 

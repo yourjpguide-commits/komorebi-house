@@ -44,7 +44,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    assertTextureDimensions(this, WORLD_BACKPLATES.room.key, 480, 270);
+    assertTextureDimensions(this, WORLD_BACKPLATES.room.key, 960, 540);
     WORLD_FURNITURE_ASSETS.forEach(({ key, width, height }) => {
       assertTextureDimensions(this, key, width, height);
     });

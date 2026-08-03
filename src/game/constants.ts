@@ -1,7 +1,8 @@
-export const GAME_WIDTH = 480;
-export const GAME_HEIGHT = 270;
-export const WORLD_VIEWPORT_Y = 7;
-export const WORLD_VIEWPORT_HEIGHT = 256;
+export const WORLD_WIDTH = 480;
+export const WORLD_HEIGHT = 270;
+export const RENDER_WIDTH = 960;
+export const RENDER_HEIGHT = 540;
+export const WORLD_RENDER_SCALE = 2;
 export const WORLD_GRID = 8;
 
 export const SCENE_KEYS = {

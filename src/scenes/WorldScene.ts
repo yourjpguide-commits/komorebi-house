@@ -16,10 +16,11 @@ import {
   INTERACTION_RADIUS,
   PLAYER_RUN_MULTIPLIER,
   PLAYER_SPEED,
+  RENDER_HEIGHT,
+  RENDER_WIDTH,
   SCENE_KEYS,
   WORLD_GRID,
-  WORLD_VIEWPORT_HEIGHT,
-  WORLD_VIEWPORT_Y,
+  WORLD_RENDER_SCALE,
 } from '../game/constants';
 import {
   tabletopSupportAt,
@@ -478,7 +479,9 @@ export class WorldScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
 
     const camera = this.cameras.main;
-    camera.setViewport(0, WORLD_VIEWPORT_Y, 480, WORLD_VIEWPORT_HEIGHT);
+    camera.stopFollow();
+    camera.setViewport(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
+    camera.setZoom(WORLD_RENDER_SCALE);
     camera.setBounds(
       this.blueprint.bounds.x,
       this.blueprint.bounds.y,
@@ -486,27 +489,7 @@ export class WorldScene extends Phaser.Scene {
       this.blueprint.bounds.height,
     );
     camera.roundPixels = true;
-    // Entrances sit along the lower edge of each map. Bias the camera upward
-    // so arrival shots establish the location's hero composition instead of
-    // framing an empty strip of walkable floor.
-    const verticalLookAhead =
-      location === 'cafe'
-        ? 110
-        : location === 'park'
-          ? 105
-          : location === 'garden'
-            ? -45
-            : 15;
-    camera.startFollow(
-      this.player,
-      true,
-      0.14,
-      0.14,
-      0,
-      verticalLookAhead,
-    );
-    camera.setDeadzone(88, 50);
-    camera.centerOn(spawn.x, spawn.y - verticalLookAhead);
+    camera.setScroll(this.blueprint.bounds.x, this.blueprint.bounds.y);
     camera.setBackgroundColor(this.blueprint.skyColor);
     if (fadeIn) camera.fadeIn(360, 37, 55, 53);
 

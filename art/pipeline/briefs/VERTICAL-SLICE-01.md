@@ -2,21 +2,21 @@
 
 ## Outcome
 
-Restyle the exact shipped Komorebi House room at its existing 480 × 270 geometry. The current room silhouette, gameplay coordinates, starter layout, and interaction landmarks remain authoritative. The CityPop references govern palette, lighting, materials, and finish—not composition.
+Restyle the exact shipped Komorebi House room at its existing 480 × 270 simulation geometry, projected into a 960 × 540 render surface. The current room silhouette, gameplay coordinates, starter layout, and interaction landmarks remain authoritative. The CityPop references govern palette, lighting, materials, and finish—not composition.
 
 ## Frozen gameplay surface
 
 The authoritative values and file hashes are recorded in `../manifests/vertical-slice-01.json` and verified by `npm run art:validate`. This slice may not change:
 
 - room bounds, obstacles, placement area, portals, spawns, or interaction points;
-- the 8 × 8 placement grid, camera contract, depth ordering, collision, or save semantics;
+- the 8 × 8 placement grid, fixed whole-room 2× camera projection, depth ordering, collision, or save semantics;
 - the starter item IDs, positions, rotations, footprints, texture keys, or avatar contract.
 
 ## First visual proof
 
 Only six runtime assets belong to the first proof:
 
-1. `room-base` — replace `public/assets/world/room-base.png` in place at exactly 480 × 270. It contains static architecture only: no movable furniture, avatar, UI, prompts, or invented portals.
+1. `room-base` — replace `public/assets/world/room-base.png` in place at exactly 960 × 540 and display it across the unchanged 480 × 270 room bounds. It contains static architecture only: no movable furniture, avatar, UI, prompts, or invented portals.
 2. `round-chabudai` — transparent 58 × 34 source canvas; existing placement `(294,190)`.
 3. `patchwork-zabuton` — transparent 32 × 17 source canvas; existing placement `(294,210)`.
 4. `folded-futon` — transparent 62 × 35 source canvas; existing placement `(194,212)`.
@@ -24,6 +24,8 @@ Only six runtime assets belong to the first proof:
 6. `milk-glass-desk-lamp` — transparent 20 × 28 source canvas; existing placement `(306,178)`.
 
 The five movable assets are one coordinated visual family but receive independent acceptance decisions. A failed member does not inherit another member's approval.
+
+This presentation bakeoff does not rescale or re-author the five movable assets or avatar. Their existing source canvases and world sizes remain unchanged until separate asset approvals.
 
 ## Visual direction
 
@@ -43,7 +45,7 @@ The live game has no external PNG loading path for furniture sprites and still h
 - Production build and cold boot have no missing texture, network, console, or WebGL errors.
 - The real buy/place/move/cancel, valid/invalid placement, front/behind depth, portal/interaction, and save/reload paths pass.
 - A real 390 × 844 touch run repeats cold boot with audio suspended or unavailable, buy/place/move, depth, travel, and reload.
-- Fresh desktop 1280 × 720 DPR 1 and mobile 390 × 844 DPR 2 captures are judged at native world resolution and nearest-neighbor enlargement.
+- Fresh desktop 1280 × 720 DPR 1 capture centers the 960 × 540 render surface at exact 1×. The existing 390 × 844 DPR 2 full-scene mobile fit remains a functional compatibility path pending its own framing decision.
 - Independent visual review scores at least 85/100, no category below 8/10, and prefers the candidate to the shipped screen while finding no recognizable copied trade dress.
 
 ## Subtraction gate

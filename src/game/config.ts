@@ -1,16 +1,18 @@
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene';
 import { WorldScene } from '../scenes/WorldScene';
-import { GAME_HEIGHT, GAME_WIDTH } from './constants';
+import { RENDER_HEIGHT, RENDER_WIDTH } from './constants';
 
 export function createGameConfig(
-  parent: string | HTMLElement,
+  parent: HTMLElement,
 ): Phaser.Types.Core.GameConfig {
+  const useIntegerPresentation =
+    parent.clientWidth >= RENDER_WIDTH && parent.clientHeight >= RENDER_HEIGHT;
   return {
     type: Phaser.AUTO,
     parent,
-    width: GAME_WIDTH,
-    height: GAME_HEIGHT,
+    width: RENDER_WIDTH,
+    height: RENDER_HEIGHT,
     backgroundColor: '#263f40',
     transparent: false,
     pixelArt: true,
@@ -25,11 +27,13 @@ export function createGameConfig(
       batchSize: 2_048,
     },
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: GAME_WIDTH,
-      height: GAME_HEIGHT,
+      mode: useIntegerPresentation ? Phaser.Scale.NONE : Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.NO_CENTER,
+      width: RENDER_WIDTH,
+      height: RENDER_HEIGHT,
       expandParent: true,
+      autoRound: true,
+      zoom: useIntegerPresentation ? Phaser.Scale.MAX_ZOOM : Phaser.Scale.NO_ZOOM,
     },
     fps: {
       target: 60,

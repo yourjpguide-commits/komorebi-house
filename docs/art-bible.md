@@ -86,57 +86,47 @@ An asset must be redesigned if a reviewer can identify a specific commercial sou
 
 ## 4. Raster and camera contract
 
-### 4.1 Native canvas
+### 4.1 Simulation and render surfaces
 
 | Property | Contract |
 |---|---|
-| Virtual canvas | **480 × 270 px**, 16:9 |
-| Art scale | Draw and export at **1× native resolution** |
-| World tile | **16 × 16 px** |
-| Placement sub-grid | **8 × 8 px** |
-| Micro-detail unit | **1 px** |
+| Simulation canvas | **480 × 270 units**, 16:9 |
+| Render surface | **960 × 540 px**, 16:9 |
+| Room architecture source | Draw and export at **960 × 540** |
+| World tile | **16 × 16 simulation units / 32 × 32 render px** |
+| Placement sub-grid | **8 × 8 simulation units / 16 × 16 render px** |
+| Micro-detail unit | **1 render px** |
 | Scaling | Nearest-neighbor only |
-| Camera | Orthographic, top-down 3/4 |
+| Camera | Orthographic, top-down 3/4, fixed whole-room 2× zoom |
 | Perspective | None; no distance scaling |
 | Rotation | Authored facings, never runtime raster rotation |
 | Base frame rate | 60 Hz simulation/render; sprite cels use lower authored cadence |
 
-The camera sees 30 full tiles horizontally. Vertically, the canonical grid viewport is 480 × 256 px: 16 complete tile rows positioned at screen `y = 7…262`. The remaining 14 px are two 7 px world-rendered overscan strips at `y = 0…6` and `y = 263…269`. Overscan may continue architecture, sky, canopy, or ground, but never contains an interaction anchor, collision decision, or essential UI.
+The camera sees the complete 480 × 270 simulation world through the complete 960 × 540 render surface. It does not follow the player, apply lookahead, or crop the authored room.
 
 At a resting camera position:
 
 ```text
-screenX = round(worldX - cameraX)
-screenY = 7 + round(worldY - cameraY)
+renderX = round(2 × (worldX - cameraX))
+renderY = round(2 × (worldY - cameraY))
 ```
 
-World origin is always the upper-left of the map, and world tile `(0, 0)` begins at world pixel `(0, 0)`. Placement coordinates are integer multiples of 8 world pixels. The camera may move by whole pixels; when it settles after travel, `cameraX` and `cameraY` return to multiples of 8 so furniture and architecture regain a stable screen-grid phase.
+World origin is always the upper-left of the map, and world tile `(0, 0)` begins at simulation coordinate `(0, 0)`. Placement coordinates remain integer multiples of 8 simulation units. The fixed camera origin is `(0,0)`, so every simulation unit and placement step maps to an exact 2 and 16 render pixels respectively.
 
-Critical subjects stay inside a 464 × 254 px action-safe rectangle, inset 8 px on every side. Dialogue portraits and large sheets use a separate UI-safe region.
+Critical subjects stay inside a 464 × 254 simulation-unit action-safe rectangle, rendered as 928 × 508 px and inset 16 render pixels on every side. Dialogue portraits and large sheets use a separate UI-safe region.
 
 ### 4.2 Browser display
 
-- Prefer integer display scales: 2× = 960 × 540, 3× = 1440 × 810, and 4× = 1920 × 1080.
-- The backing surface accounts for device pixel ratio; the world remains 480 × 270 logical pixels.
+- Prefer integer presentation scales: 1× = 960 × 540 and 2× = 1920 × 1080.
+- The render surface remains 960 × 540 while simulation, collision, placement, and saves remain 480 × 270.
 - Set canvas/image sampling to nearest-neighbor at every stage.
-- Never mix 1× world art with pre-scaled 2× or 3× assets.
+- Every asset declares its source density and world display size; density is never inferred from a filename or runtime scale hack.
 - Fractional browser fitting may be used only as a last-resort outer presentation transform. It must not alter world coordinates, texture sampling, or source art.
 - Letterbox with `#171B2D`, a low-contrast washi pattern, or responsive UI—not a stretched scene.
 
-#### Sanctioned portrait mode
+#### Portrait compatibility
 
-Portrait does not fractionally shrink the 480 × 270 world.
-
-- The browser keeps the complete 480 × 270 nearest-neighbor render target.
-- A 320 × 180 camera-safe crop is presented at exactly 320 × 180 CSS px in a centered `overflow: hidden` wrapper. Its initial source rect is `(80, 45, 320, 180)`.
-- In portrait, the crop window may pan over the fixed 480 × 270 render target with integer source origins `cropX = 0…160` and `cropY = 0…90`. The house/café world cameras remain fixed; only this presentation window moves.
-- The full canvas is translated by `(-cropX, -cropY)` inside the wrapper. One source pixel remains one CSS pixel; device pixel ratio expands each source pixel to an exact `DPR × DPR` physical block.
-- On a 390 × 844 CSS viewport, the world crop begins at `x = 35`, leaving 35 px side margins. Responsive HTML/canvas UI occupies the area below it.
-- The portrait crop follows the player or selected item only after it leaves the crop-local dead zone `x = 32…288`, `y = 18…162`. It moves by whole source pixels, clamps to the legal crop bounds, and settles to an 8 px phase.
-- World overview and large placement operations may open a full-screen 320 × 180 planning view that pans the same map at native scale. It never scales the full 480 px scene down.
-- If the viewport is narrower than 320 CSS px, gameplay requests landscape orientation; it does not blur or nonuniformly scale.
-
-This crop is an alternate framing of the same world, not a second art resolution.
+The current portrait runtime presents the complete 960 × 540 render surface with fractional outer FIT while preserving the 480 × 270 simulation and touch coordinates. This is a functional compatibility path, not the final pixel-presentation contract. A native crop/pan redesign requires a separate mobile bakeoff and must not be smuggled into the desktop render cutover.
 
 ### 4.3 Projection grammar
 
@@ -945,7 +935,7 @@ The Komorebi Lattice may appear on loading, save confirmation, and empty states.
 
 ### 17.7 Normative UI layouts
 
-All landscape coordinates below are native pixels on the 480 × 270 target.
+All landscape coordinates below use the 480 × 270 simulation grid; multiply by two when projecting a canvas-native element into the 960 × 540 render surface. The current DOM interface remains CSS-pixel responsive and is not raster-scaled by this table.
 
 | Surface | Rectangle | Internal contract |
 |---|---:|---|
@@ -965,18 +955,7 @@ Landscape truncation:
 - Prices and counts never truncate; the label yields space first.
 - Focus highlight adds no layout size—it occupies the existing 1 px inner keyline.
 
-Portrait uses CSS-pixel UI below the exact 320 × 180 world crop:
-
-| Surface on 390 × 844 | Rectangle in CSS px |
-|---|---:|
-| World crop wrapper | `(35,16,320,180)` |
-| Status/actions row | `(15,208,360,44)` |
-| Quick tray | `(35,260,320,56)` |
-| Inventory/modal sheet | `(15,208,360,620)` |
-| Portrait item grid | inner width 336; 2 columns of 164 × 92 cards with 8 px gutter |
-| Portrait dialogue | `(15,638,360,190)`; portrait 64 × 64; text uses 14 CSS px line height |
-
-In portrait, inventory, dialogue, and large study sheets replace the lower control stack rather than layering over it. The world crop remains visible unless narrative privacy or text length requires a full sheet. Every interactive cell has a minimum 44 × 44 CSS px hit target; visual pixel icons remain centered at native size.
+Portrait currently uses responsive CSS-pixel UI around the full-scene compatibility FIT. Inventory, dialogue, and large study sheets replace the lower control stack rather than layering over it, and every interactive cell keeps a minimum 44 × 44 CSS px hit target. Exact crop-wrapper rectangles remain intentionally unspecified until the separate mobile framing bakeoff.
 
 ## 18. Location transitions and framing
 
@@ -1106,10 +1085,9 @@ Without labels, a reviewer can distinguish:
 
 ### 20.6 Browser and viewport
 
-- Verify 480 × 270 output at exact 2×, 3×, and 4× landscape scales.
-- Verify the sanctioned 320 × 180 source crop at its initial `(80,45)` origin and all four legal extrema within `cropX 0…160`, `cropY 0…90`, inside a 390 × 844 portrait layout at DPR 2 and DPR 3.
-- Pixel inspection confirms every source pixel occupies an exact `DPR × DPR` physical block in portrait; no full-scene fractional downscale is present.
-- The player/selected object remains within the portrait crop’s 256 × 144 safe center as the crop window follows over fixed house/café cameras and normal garden/park cameras.
+- Verify 960 × 540 output at exact 1× and 2× landscape presentation scales.
+- Verify the current full-scene FIT inside a 390 × 844 portrait layout at DPR 2 without displaced touch targets, clipping, overflow, or lost access to placement cells.
+- Treat portrait pixel crispness and crop/pan composition as pending until the separate mobile bakeoff is approved.
 - The world composition remains understandable when UI reflows, and the planning view can reach every placement cell hidden outside the crop.
 - Touch UI does not cover exits, the player, or the selected object.
 - No shimmer appears when camera and character move one pixel at a time.
