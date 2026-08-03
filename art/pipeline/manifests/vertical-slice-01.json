@@ -56,7 +56,9 @@
       "id": "room-base",
       "family": "room-architecture",
       "kind": "architecture",
-      "state": "candidate",
+      "state": "runtime-approved",
+      "revision": "v5",
+      "sha256": "0b1fb259de56980f9b82a8fc8b1706201585edf5c410ce8eb797bb23edace6ae",
       "runtimeKey": "koh:world:room",
       "nativeCanvas": [960, 540],
       "runtimeOrigin": [0, 0],
@@ -65,6 +67,33 @@
       "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/game/locationRenderer.ts#renderRoom"],
       "retainedBlockers": [],
+      "lineage": {
+        "approvedSourceSha256": "8519e7cbcab7a88a532133560abb3bfa19d5e5486e0ad74fd753f9767e7994f2",
+        "imageGenerationSha256": "01cd7c5d687bb821fb282898808f8d062e72e02c706af8f8ad7e6cc85c4b2795",
+        "cleanupInputSha256": "333dafbc9ed641f9f193702e2b26ea6067dda4e0ecd39c084cbfd5907e3054cb",
+        "cleanupMaskSha256": "fd1b31ebaf28436181d840bb6e9998d595943e3f311d8800b0a9fea7be87d076",
+        "cleanupMethod": "Masked 3x3 local-median replacement at 12% outlier threshold with blurred structural-edge protection; no geometry, composition, or light change.",
+        "changedPixelPercent": 4.3341
+      },
+      "approval": {
+        "juryDecision": "pass",
+        "juryScore": 92,
+        "juryCategoryMinimum": 9,
+        "runtimeIntegration": true,
+        "runtimeAssetSha256": "0b1fb259de56980f9b82a8fc8b1706201585edf5c410ce8eb797bb23edace6ae",
+        "desktopCaptures": [
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "aa2ba17710b8928dae1c3f635a7947e8c9e86e69f4f20001e704f53f10ba172c" },
+          { "viewport": [1280, 720], "state": "sparse", "sha256": "453461715948fab6e5ce76d4c9f82f0a7e2c61b1ece2200e7e8d3daf3987ecfc" },
+          { "viewport": [1440, 900], "state": "furnished", "sha256": "a38297ee1478836c8790413e23fdb71d197dea0ef9e06ad945a18317f0284e6c" },
+          { "viewport": [1440, 900], "state": "sparse", "sha256": "b20ead497390d1db9f946fc3d2bc65acb23dfe03552d605f730cbd25bb6fdaa5" },
+          { "viewport": [1920, 1080], "state": "furnished", "sha256": "590ae830a30d9dc381145abbcb8972d7a8d7120b8c3df3d5733692b369cf9835" },
+          { "viewport": [1920, 1080], "state": "sparse", "sha256": "058c3db878697cea07a3f5d8ce0c9f74fef6703d8450ede9a17fb7fa9b6bc032" }
+        ],
+        "nativeCaptures": [
+          { "viewport": [960, 540], "state": "furnished", "sha256": "7c39b3dfc745ce3d60128e85c3f673000ce0d9c10681d95598d19403396a70bc" },
+          { "viewport": [960, 540], "state": "sparse", "sha256": "bb58f8250157f05d202eef93fa45ee182086904ddf2abd6a7a855ea29ae9b26a" }
+        ]
+      },
       "proof": { "isolated": false, "anchor": true, "footprint": true, "runtimeCapture": true, "oldProducerDeleted": true }
     },
     {

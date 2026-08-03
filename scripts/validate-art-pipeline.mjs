@@ -71,6 +71,9 @@ for (const asset of manifest.assets) {
   if (!hasPngSignature(bytes)) fail(`${asset.id} is not a PNG`);
   const dimensions = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
   if (!same(dimensions, asset.nativeCanvas)) fail(`${asset.id} must remain exactly ${asset.nativeCanvas.join("x")}`);
+  if (asset.sha256 && await hashFile(asset.replacementTarget) !== asset.sha256) {
+    fail(`${asset.id} runtime PNG hash does not match its approval receipt`);
+  }
 }
 
 const rotatableFurnitureIds = new Set(["patchwork-zabuton", "seigaiha-notebook"]);
