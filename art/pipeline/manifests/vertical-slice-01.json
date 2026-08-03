@@ -109,7 +109,7 @@
       "id": "folded-futon",
       "family": "starter-furniture",
       "kind": "furniture",
-      "state": "brief",
+      "state": "runtime-approved",
       "runtimeKey": "koh:decor:folded-futon",
       "nativeCanvas": [62, 35],
       "runtimeOrigin": [0.5, 1],
@@ -120,7 +120,7 @@
       "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#folded-futon", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.folded-futon"],
       "retainedBlockers": [],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true }
+      "proof": { "isolated": true, "anchor": true, "footprint": true, "runtimeCapture": true, "oldProducerDeleted": true }
     },
     {
       "id": "seigaiha-notebook",
