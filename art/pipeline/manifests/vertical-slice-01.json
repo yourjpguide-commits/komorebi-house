@@ -55,7 +55,7 @@
       "id": "room-base",
       "family": "room-architecture",
       "kind": "architecture",
-      "state": "brief",
+      "state": "runtime-approved",
       "runtimeKey": "koh:world:room",
       "nativeCanvas": [480, 270],
       "runtimeOrigin": [0, 0],
@@ -64,7 +64,7 @@
       "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/game/locationRenderer.ts#renderRoom"],
       "retainedBlockers": [],
-      "proof": { "isolated": false, "anchor": true, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true }
+      "proof": { "isolated": false, "anchor": true, "footprint": true, "runtimeCapture": true, "oldProducerDeleted": true }
     },
     {
       "id": "round-chabudai",
