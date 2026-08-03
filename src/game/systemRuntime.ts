@@ -20,11 +20,107 @@ import { FALLBACK_DECOR_CATALOG } from './catalogFallback';
 import { DEFAULT_SAVE_KEY } from './constants';
 import { createDefaultWorldState } from './storage';
 import {
+  resolveTabletopSupport,
+  rotateTabletopOffset,
+  savedTabletopSupportIsValid,
+} from '../systems/tabletopSupport';
+import { worldFurnitureSupportSocket } from './worldAssets';
+import {
   LOCATION_IDS,
   type LocationId,
   type PlacedDecor,
   type SavedWorldState,
 } from './types';
+
+function bindTabletopPlacement(
+  placement: PlacedDecor,
+  placements: readonly PlacedDecor[],
+): { placement: PlacedDecor; occupied: boolean } {
+  const resolved = resolveTabletopSupport(placements, placement);
+  if (resolved.status !== 'supported') return {
+    placement: { ...placement, support: undefined },
+    occupied: resolved.status === 'occupied',
+  };
+  return { occupied: false, placement: {
+    ...placement,
+    x: resolved.support.x,
+    y: resolved.support.y,
+    rotation: resolved.support.rotation,
+    support: {
+      parentInstanceId: resolved.support.parentInstanceId,
+      socket: resolved.support.socket,
+      offset: { ...resolved.support.offset },
+    },
+  } };
+}
+
+function isExactLegacyStarterPlacement(placement: PlacedDecor): boolean {
+  return (
+    placement.instanceId === 'starter-notebook' && placement.itemId === 'seigaiha-notebook' &&
+    placement.location === 'room' && placement.x === 282 && placement.y === 178
+  ) || (
+    placement.instanceId === 'starter-lamp' && placement.itemId === 'milk-glass-desk-lamp' &&
+    placement.location === 'room' && placement.x === 306 && placement.y === 178
+  );
+}
+
+function isExactCanonicalStarterPlacement(placement: PlacedDecor): boolean {
+  return (
+    placement.instanceId === 'starter-notebook' && placement.itemId === 'seigaiha-notebook' &&
+    placement.location === 'room' && placement.x === 285 && placement.y === 169 && placement.rotation === 270
+  ) || (
+    placement.instanceId === 'starter-lamp' && placement.itemId === 'milk-glass-desk-lamp' &&
+    placement.location === 'room' && placement.x === 297.5 && placement.y === 169.5
+  );
+}
+
+function restoreTabletopPlacement(
+  placement: PlacedDecor,
+  placements: readonly PlacedDecor[],
+  reserved: Set<string>,
+  allowLegacyInference: boolean,
+  storedDuplicateIds: Set<string>,
+): PlacedDecor {
+  if (placement.support && savedTabletopSupportIsValid(placements, placement)) {
+    const reservation = `${placement.support.parentInstanceId}:${placement.support.socket}`;
+    if (reserved.has(reservation)) {
+      storedDuplicateIds.add(placement.instanceId);
+      return placement;
+    }
+    const parent = placements.find((candidate) =>
+      candidate.instanceId === placement.support!.parentInstanceId)!;
+    const offset = rotateTabletopOffset(placement.support.offset, parent.rotation);
+    reserved.add(reservation);
+    return { ...placement, x: parent.x + offset.x, y: parent.y + offset.y };
+  }
+  if (allowLegacyInference && !placement.support &&
+    (isExactLegacyStarterPlacement(placement) || isExactCanonicalStarterPlacement(placement))) {
+    const parent = placements.find((candidate) =>
+      candidate.instanceId === 'starter-table' && candidate.itemId === 'round-chabudai' &&
+      candidate.location === 'room' && candidate.x === 294 && candidate.y === 190 && candidate.rotation === 0);
+    if (parent) {
+      const socket = worldFurnitureSupportSocket(parent.itemId, placement.itemId);
+      if (socket) {
+        const reservation = `${parent.instanceId}:${socket.id}`;
+        if (reserved.has(reservation)) return placement;
+        const offset = rotateTabletopOffset(socket.offset, parent.rotation);
+        reserved.add(reservation);
+        return {
+          ...placement,
+          x: parent.x + offset.x,
+          y: parent.y + offset.y,
+          rotation: socket.rotation ?? placement.rotation,
+          support: {
+            parentInstanceId: parent.instanceId,
+            socket: socket.id,
+            offset: { ...socket.offset },
+          },
+        };
+      }
+    }
+  }
+  return placement.support ? { ...placement, support: undefined } : placement;
+}
 
 export const RUNTIME_CATALOG_VERSION = 'komorebi-browser-v1';
 export const AUTHORITY_EVENT = 'komorebi:authority-state';
@@ -155,6 +251,22 @@ function parsePlacedDecor(
       candidate.rotation === 270
         ? candidate.rotation
         : 0;
+    const supportCandidate = isRecord(candidate.support) ? candidate.support : null;
+    const offset = supportCandidate && isRecord(supportCandidate.offset)
+      ? supportCandidate.offset
+      : null;
+    const support = supportCandidate &&
+      typeof supportCandidate.parentInstanceId === 'string' &&
+      typeof supportCandidate.socket === 'string' &&
+      supportCandidate.socket.length > 0 && offset &&
+      typeof offset.x === 'number' && Number.isFinite(offset.x) &&
+      typeof offset.y === 'number' && Number.isFinite(offset.y)
+      ? {
+          parentInstanceId: supportCandidate.parentInstanceId,
+          socket: supportCandidate.socket,
+          offset: { x: offset.x, y: offset.y },
+        }
+      : undefined;
     placements.push({
       instanceId: candidate.instanceId,
       itemId: candidate.itemId,
@@ -162,12 +274,13 @@ function parsePlacedDecor(
       x,
       y,
       rotation,
+      ...(support ? { support } : {}),
     });
   }
   return placements;
 }
 
-function placementsFromState(state: Readonly<GameState>): PlacedDecor[] {
+export function placementsFromState(state: Readonly<GameState>): PlacedDecor[] {
   const placements: PlacedDecor[] = [];
   for (const location of LOCATION_IDS) {
     const extension = state.extensions[location];
@@ -210,6 +323,16 @@ function worldExtension(
       itemId: placement.itemId,
       position: { x: placement.x, y: placement.y },
       rotation: placement.rotation,
+      ...(placement.support ? {
+        support: {
+          parentInstanceId: placement.support.parentInstanceId,
+          socket: placement.support.socket,
+          offset: {
+            x: placement.support.offset.x,
+            y: placement.support.offset.y,
+          },
+        },
+      } : {}),
     })),
   };
 }
@@ -245,8 +368,19 @@ function unusedInstanceId(
  * placement transaction intentionally requires durable instance identities,
  * so loading upgrades every stack once before play begins.
  */
-function normalizeLoadedState(input: GameState): GameState {
-  const placements = placementsFromState(input);
+export function normalizeLoadedState(input: GameState): GameState {
+  const parsedPlacements = placementsFromState(input);
+  const reservedSupports = new Set<string>();
+  const storedDuplicateIds = new Set<string>();
+  const allowLegacyInference = input.extensions.tabletopSupportMigration !== 1;
+  const placements = parsedPlacements.map((placement) =>
+    restoreTabletopPlacement(
+      placement,
+      parsedPlacements,
+      reservedSupports,
+      allowLegacyInference,
+      storedDuplicateIds,
+    )).filter((placement) => !storedDuplicateIds.has(placement.instanceId));
   const instances = { ...input.economy.inventory.instances };
   const policies = { ...input.economy.inventory.policies };
 
@@ -291,8 +425,13 @@ function normalizeLoadedState(input: GameState): GameState {
   for (const instance of Object.values(instances)) {
     policies[instance.itemId] = { storage: 'instance', maxOwned: 99 };
   }
+  for (const instanceId of storedDuplicateIds) {
+    const instance = instances[instanceId];
+    if (instance) instances[instanceId] = { ...instance, disposition: { kind: 'stored' } };
+  }
 
   const extensions = { ...input.extensions };
+  extensions.tabletopSupportMigration = 1;
   delete extensions.legacyWorld;
   delete extensions.world;
   for (const location of LOCATION_IDS) {
@@ -536,11 +675,36 @@ class SystemRuntime {
           message: stored.error.message,
         };
       }
-      const placement: PlacedDecor = {
+      const unboundPlacement: PlacedDecor = {
         ...draft,
         instanceId: existingInstanceId,
+        support: undefined,
       };
       const afterStore = placementsFromState(stored.state);
+      const binding = bindTabletopPlacement(unboundPlacement, afterStore);
+      if (binding.occupied) return {
+        ok: false,
+        code: 'TABLETOP_SOCKET_OCCUPIED',
+        message: 'That tabletop spot is already occupied.',
+      };
+      const placement = binding.placement;
+      const movedChildren = current
+        .filter((candidate) => candidate.support?.parentInstanceId === existingInstanceId)
+        .map((child) => {
+          const offset = rotateTabletopOffset(child.support!.offset, placement.rotation);
+          return {
+            ...child,
+            location: placement.location,
+            x: placement.x + offset.x,
+            y: placement.y + offset.y,
+          };
+        });
+      const movedChildIds = new Set(movedChildren.map((child) => child.instanceId));
+      const nextPlacements = [
+        ...afterStore.filter((candidate) => !movedChildIds.has(candidate.instanceId)),
+        ...movedChildren,
+        placement,
+      ];
       const placed = this.applyTo(
         stored.state,
         {
@@ -552,7 +716,7 @@ class SystemRuntime {
             key: draft.location,
             value: worldExtension(
               draft.location,
-              [...afterStore, placement],
+              nextPlacements,
               nextWorldRevision(stored.state, draft.location),
             ),
           },
@@ -583,10 +747,18 @@ class SystemRuntime {
         message: 'There is no free copy of that item in storage.',
       };
     }
-    const placement: PlacedDecor = {
+    const unboundPlacement: PlacedDecor = {
       ...draft,
       instanceId: instance.instanceId,
+      support: undefined,
     };
+    const binding = bindTabletopPlacement(unboundPlacement, current);
+    if (binding.occupied) return {
+      ok: false,
+      code: 'TABLETOP_SOCKET_OCCUPIED',
+      message: 'That tabletop spot is already occupied.',
+    };
+    const placement = binding.placement;
     const result = this.applyTo(
       state,
       {
@@ -630,32 +802,63 @@ class SystemRuntime {
         message: 'That decoration is no longer placed.',
       };
     }
-    const result = this.applyTo(
-      state,
-      {
-        type: 'inventory.mark-stored',
-        instanceId,
-        worldExtension: {
-          key: existing.location,
-          value: worldExtension(
-            existing.location,
-            current.filter((placement) => placement.instanceId !== instanceId),
-            nextWorldRevision(state, existing.location),
-          ),
+    const affectedIds = new Set([
+      instanceId,
+      ...current
+        .filter((placement) => placement.support?.parentInstanceId === instanceId)
+        .map((placement) => placement.instanceId),
+    ]);
+    let nextState = state;
+    for (const affectedId of affectedIds) {
+      const remaining = placementsFromState(nextState).filter(
+        (placement) => placement.instanceId !== affectedId,
+      );
+      const result = this.applyTo(
+        nextState,
+        {
+          type: 'inventory.mark-stored',
+          instanceId: affectedId,
+          worldExtension: {
+            key: existing.location,
+            value: worldExtension(
+              existing.location,
+              remaining,
+              nextWorldRevision(nextState, existing.location),
+            ),
+          },
         },
-      },
-      this.transactionId('placement.store'),
-      this.commandTime(state),
-    );
-    if (!result.ok) {
-      return {
-        ok: false,
-        code: result.error.code,
-        message: result.error.message,
-      };
+        this.transactionId('placement.store'),
+        this.commandTime(state),
+      );
+      if (!result.ok) {
+        return {
+          ok: false,
+          code: result.error.code,
+          message: result.error.message,
+        };
+      }
+      nextState = result.state;
     }
-    this.commit(result.state);
+    this.commit(nextState);
     return { ok: true, placement: existing };
+  }
+
+  seedLegacyTabletopFixtureForQa(): boolean {
+    const state = structuredClone(this.getState()) as GameState;
+    const room = state.extensions.room;
+    if (!isRecord(room) || !Array.isArray(room.items)) return false;
+    const notebook = room.items.find((item) =>
+      isRecord(item) && item.instanceId === 'starter-notebook');
+    const lamp = room.items.find((item) =>
+      isRecord(item) && item.instanceId === 'starter-lamp');
+    if (!isRecord(notebook) || !isRecord(lamp)) return false;
+    notebook.position = { x: 282, y: 178 };
+    delete notebook.support;
+    lamp.position = { x: 305, y: 178 };
+    delete lamp.support;
+    delete state.extensions.tabletopSupportMigration;
+    this.commit(normalizeLoadedState(state));
+    return true;
   }
 
   grantCoins(amount: number): boolean {

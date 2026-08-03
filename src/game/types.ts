@@ -39,6 +39,14 @@ export interface PlacedDecor {
   x: number;
   y: number;
   rotation: 0 | 90 | 180 | 270;
+  support?: TabletopSupportRelation;
+}
+
+export interface TabletopSupportRelation {
+  parentInstanceId: string;
+  socket: string;
+  /** Offset in the parent's unrotated local coordinate space. */
+  offset: Point;
 }
 
 export interface InteractionDefinition extends Point {

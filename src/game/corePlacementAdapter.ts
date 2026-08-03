@@ -10,6 +10,7 @@ import {
   type WorldState,
 } from '../core';
 import { WORLD_GRID } from './constants';
+import { resolveTabletopSupport } from '../systems/tabletopSupport';
 import { SCENE_DECOR_CATALOG } from './catalogAdapter';
 import type {
   DecorDefinition,
@@ -85,52 +86,13 @@ const CORE_ITEM_REGISTRY: ItemRegistry = Object.fromEntries(
   ]),
 );
 
-const SCENE_DECOR_BY_ID = new Map(
-  SCENE_DECOR_CATALOG.map((definition) => [definition.id, definition]),
-);
-
-const TABLETOP_SUPPORT_IDS = new Set([
-  'low-desk',
-  'kotatsu',
-  'round-chabudai',
-  'hinoki-writing-desk',
-  'low-desk-hinoki',
-  'persimmon-kotatsu',
-]);
-
-/**
- * Finds the front-most table whose footprint contains a tabletop coordinate.
- * The support's foot line is the honest presentation depth for anything
- * resting on it, even though the prop itself is positioned higher on screen.
- */
-export function tabletopSupportAt(
+export function tabletopPlacementAt(
   placements: readonly PlacedDecor[],
-  location: PlacedDecor['location'],
+  child: PlacedDecor,
   x: number,
   y: number,
-): PlacedDecor | undefined {
-  let frontMost: PlacedDecor | undefined;
-  for (const placement of placements) {
-    if (placement.location !== location) continue;
-    const support = SCENE_DECOR_BY_ID.get(placement.itemId);
-    if (!support) continue;
-    if (support.category !== 'desk' && !TABLETOP_SUPPORT_IDS.has(support.id)) {
-      continue;
-    }
-    const rotated = placement.rotation === 90 || placement.rotation === 270;
-    const width = rotated ? support.footprint.height : support.footprint.width;
-    const height = rotated ? support.footprint.width : support.footprint.height;
-    if (
-      x < placement.x - width / 2 ||
-      x > placement.x + width / 2 ||
-      y < placement.y - height ||
-      y > placement.y
-    ) {
-      continue;
-    }
-    if (!frontMost || placement.y > frontMost.y) frontMost = placement;
-  }
-  return frontMost;
+): ReturnType<typeof resolveTabletopSupport> {
+  return resolveTabletopSupport(placements, { ...child, x, y });
 }
 
 function buildWorldDefinition(blueprint: LocationBlueprint): WorldDefinition {

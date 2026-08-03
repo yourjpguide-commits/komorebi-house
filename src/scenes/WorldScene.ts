@@ -23,7 +23,7 @@ import {
   WORLD_RENDER_SCALE,
 } from '../game/constants';
 import {
-  tabletopSupportAt,
+  tabletopPlacementAt,
   validateScenePlacement,
 } from '../game/corePlacementAdapter';
 import {
@@ -698,17 +698,13 @@ export class WorldScene extends Phaser.Scene {
       const footprintHeight = rotated
         ? definition.footprint.width
         : definition.footprint.height;
-      const support =
-        definition.category === 'tabletop' ||
-        definition.placementSurface === 'tabletop'
-          ? tabletopSupportAt(
-              this.savedState.placedDecor,
-              placement.location,
-              placement.x,
-              placement.y,
-            )
-          : undefined;
+      const support = placement.support
+        ? this.savedState.placedDecor.find(
+            (candidate) => candidate.instanceId === placement.support?.parentInstanceId,
+          )
+        : undefined;
       const presentationY = support?.y ?? placement.y;
+      const supportDepthBias = support ? 0.2 : 0;
       const asset = worldFurnitureAsset(textureKey);
       const renderObjects: Phaser.GameObjects.Image[] = [];
       if (asset?.castMask) {
@@ -718,7 +714,7 @@ export class WorldScene extends Phaser.Scene {
             textureKey,
           )
             .setAlpha(asset.castMask.alpha ?? 1)
-            .setDepth(DEPTH.worldObject + presentationY + 0.03),
+            .setDepth(DEPTH.worldObject + presentationY + supportDepthBias + 0.03),
         );
       }
       if (asset?.contactMask) {
@@ -728,7 +724,7 @@ export class WorldScene extends Phaser.Scene {
             textureKey,
           )
             .setAlpha(asset.contactMask.alpha ?? 1)
-            .setDepth(DEPTH.worldObject + presentationY + 0.05),
+            .setDepth(DEPTH.worldObject + presentationY + supportDepthBias + 0.05),
         );
       }
       if (!asset?.castMask && !asset?.contactMask) {
@@ -741,7 +737,7 @@ export class WorldScene extends Phaser.Scene {
               Phaser.Math.Clamp(footprintHeight / 12, 0.55, 1.65),
             )
             .setAlpha(0.62)
-            .setDepth(DEPTH.worldObject + presentationY + 0.05),
+            .setDepth(DEPTH.worldObject + presentationY + supportDepthBias + 0.05),
         );
       }
       const sprite = this.configureFurnitureImage(
@@ -751,7 +747,7 @@ export class WorldScene extends Phaser.Scene {
         // The texture key already selects an authored cel for its supported
         // facing; runtime rotation would blur and falsify the pixel projection.
         .setAngle(0)
-        .setDepth(DEPTH.worldObject + presentationY + 0.1)
+        .setDepth(DEPTH.worldObject + presentationY + supportDepthBias + 0.1)
         .setInteractive({ useHandCursor: true });
 
       sprite.on(
@@ -1250,6 +1246,28 @@ export class WorldScene extends Phaser.Scene {
     const candidateId =
       placement.existingInstanceId ??
       `preview-${placement.definition.id}-${this.placementSerial}`;
+    const tabletop =
+      placement.definition.category === 'tabletop' ||
+      placement.definition.placementSurface === 'tabletop'
+        ? tabletopPlacementAt(
+            this.savedState.placedDecor,
+            {
+              instanceId: candidateId,
+              itemId: placement.definition.id,
+              location: this.blueprint.id,
+              x: placement.x,
+              y: placement.y,
+              rotation: placement.rotation,
+            },
+            placement.x,
+            placement.y,
+          )
+        : undefined;
+    if (tabletop?.status === 'supported') {
+      placement.x = tabletop.support.x;
+      placement.y = tabletop.support.y;
+      placement.rotation = tabletop.support.rotation;
+    }
     const validation = validateScenePlacement(
       this.blueprint,
       this.savedState.placedDecor,
@@ -1260,8 +1278,11 @@ export class WorldScene extends Phaser.Scene {
       placement.rotation,
       placement.existingInstanceId,
     );
+    const socketOnlyConflict = tabletop?.status === 'supported' &&
+      validation.issues.length > 0 &&
+      validation.issues.every((issue) => issue.code === 'FOOTPRINT_CONFLICT');
     placement.valid =
-      validation.ok &&
+      (validation.ok || socketOnlyConflict) &&
       this.placementMountValid(
         placement.x,
         placement.y,
@@ -1668,14 +1689,22 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private hasTabletopSupport(x: number, y: number): boolean {
-    return Boolean(
-      tabletopSupportAt(
-        this.savedState.placedDecor,
-        this.blueprint.id,
+    const placement = this.placement;
+    if (!placement) return false;
+    return tabletopPlacementAt(
+      this.savedState.placedDecor,
+      {
+        instanceId: placement.existingInstanceId ??
+          `preview-${placement.definition.id}-${this.placementSerial}`,
+        itemId: placement.definition.id,
+        location: this.blueprint.id,
         x,
         y,
-      ),
-    );
+        rotation: placement.rotation,
+      },
+      x,
+      y,
+    ).status === 'supported';
   }
 
   private createAmbient(): void {

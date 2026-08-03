@@ -17,8 +17,8 @@ export const DEFAULT_WORLD_STATE: SavedWorldState = {
     { instanceId: 'starter-table', itemId: 'round-chabudai', location: 'room', x: 294, y: 190, rotation: 0 },
     { instanceId: 'starter-cushion', itemId: 'patchwork-zabuton', location: 'room', x: 294, y: 210, rotation: 0 },
     { instanceId: 'starter-futon', itemId: 'folded-futon', location: 'room', x: 194, y: 212, rotation: 0 },
-    { instanceId: 'starter-notebook', itemId: 'seigaiha-notebook', location: 'room', x: 282, y: 178, rotation: 0 },
-    { instanceId: 'starter-lamp', itemId: 'milk-glass-desk-lamp', location: 'room', x: 306, y: 178, rotation: 0 },
+    { instanceId: 'starter-notebook', itemId: 'seigaiha-notebook', location: 'room', x: 285, y: 169, rotation: 270, support: { parentInstanceId: 'starter-table', socket: 'notebook', offset: { x: -9, y: -21 } } },
+    { instanceId: 'starter-lamp', itemId: 'milk-glass-desk-lamp', location: 'room', x: 297.5, y: 169.5, rotation: 0, support: { parentInstanceId: 'starter-table', socket: 'lamp', offset: { x: 3.5, y: -20.5 } } },
   ],
 };
 

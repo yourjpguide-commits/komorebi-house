@@ -13,12 +13,33 @@ export interface WorldFurnitureAsset {
   readonly origin?: readonly [x: number, y: number];
   readonly contactMask?: WorldFurnitureLayerAsset;
   readonly castMask?: WorldFurnitureLayerAsset;
+  readonly supportGeometry?: WorldFurnitureSupportGeometry;
 }
 
 export interface WorldFurnitureLayerAsset {
   readonly key: string;
   readonly path: string;
   readonly alpha?: number;
+}
+
+export interface WorldFurnitureSupportGeometry {
+  readonly sourceSize: readonly [width: number, height: number];
+  readonly sourceAnchor: readonly [x: number, y: number];
+  readonly displayScale: number;
+  readonly sourcePolygon: readonly (readonly [x: number, y: number])[];
+  readonly sockets: Readonly<Record<string, WorldFurnitureSupportSocketSpec>>;
+}
+
+export interface WorldFurnitureSupportSocketSpec {
+  readonly sourcePoint: readonly [x: number, y: number];
+  readonly accepts?: readonly string[];
+  readonly rotation?: 0 | 90 | 180 | 270;
+}
+
+export interface ResolvedWorldFurnitureSupportSocket {
+  readonly id: string;
+  readonly offset: Readonly<{ x: number; y: number }>;
+  readonly rotation?: 0 | 90 | 180 | 270;
 }
 
 const furnitureAsset = (
@@ -58,6 +79,31 @@ export const WORLD_FURNITURE_ASSETS: ReadonlyArray<WorldFurnitureAsset> =
       key: 'koh:decor:round-chabudai',
       path: publicAsset('assets/v2/furniture/round-chabudai.png'),
       sourceSize: [58, 34],
+      supportGeometry: {
+        sourceSize: [124, 76],
+        sourceAnchor: [62, 67],
+        displayScale: 0.5,
+        sourcePolygon: [
+          [28, 19],
+          [40, 12],
+          [80, 12],
+          [97, 20],
+          [88, 33],
+          [39, 33],
+        ],
+        sockets: {
+          notebook: {
+            sourcePoint: [44, 25],
+            accepts: ['seigaiha-notebook'],
+            rotation: 270,
+          },
+          lamp: {
+            sourcePoint: [69, 26],
+            accepts: ['milk-glass-desk-lamp'],
+          },
+          center: { sourcePoint: [62, 18] },
+        },
+      },
     }),
     furnitureAsset({
       key: 'koh:decor:patchwork-zabuton',
@@ -169,6 +215,32 @@ export function worldFurnitureAsset(
   key: string,
 ): WorldFurnitureAsset | undefined {
   return WORLD_FURNITURE_ASSET_BY_KEY.get(key);
+}
+
+export function worldFurnitureSupportGeometry(
+  parentItemId: string,
+): WorldFurnitureSupportGeometry | undefined {
+  return worldFurnitureAsset(`koh:decor:${parentItemId}`)?.supportGeometry;
+}
+
+export function worldFurnitureSupportSocket(
+  parentItemId: string,
+  childItemId: string,
+): ResolvedWorldFurnitureSupportSocket | undefined {
+  const geometry = worldFurnitureSupportGeometry(parentItemId);
+  if (!geometry) return undefined;
+  const entry = Object.entries(geometry.sockets).find(([, socket]) =>
+    socket.accepts?.includes(childItemId));
+  if (!entry) return undefined;
+  const [id, socket] = entry;
+  return {
+    id,
+    offset: {
+      x: (socket.sourcePoint[0] - geometry.sourceAnchor[0]) * geometry.displayScale,
+      y: (socket.sourcePoint[1] - geometry.sourceAnchor[1]) * geometry.displayScale,
+    },
+    rotation: socket.rotation,
+  };
 }
 
 export function worldBackplateAsset(location: LocationId): WorldBackplateAsset {

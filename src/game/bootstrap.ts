@@ -617,16 +617,22 @@ export function bootstrapGame(root: HTMLElement): GameBootstrapHandle {
         },
         inventory: snapshot?.ownedItems ?? {},
         placements: placements.map((placement) => ({
-          placementLayer: placementLayerForDecor(
-            sceneDecorById(placement.itemId),
-          ),
+          placementLayer: placement.support
+            ? `tabletop:${placement.support.parentInstanceId}:${placement.support.socket}`
+            : placementLayerForDecor(sceneDecorById(placement.itemId)),
           id: placement.instanceId,
           sku: placement.itemId,
           zone: placement.location,
+          x: placement.x,
+          y: placement.y,
+          support: placement.support ?? null,
           tileX: Math.round(placement.x / WORLD_GRID),
           tileY: Math.round(placement.y / WORLD_GRID),
           rotation: placement.rotation,
-          depth: DEPTH.worldObject + placement.y,
+          depth: DEPTH.worldObject +
+            (placement.support
+              ? (placements.find((candidate) => candidate.instanceId === placement.support?.parentInstanceId)?.y ?? placement.y) + 0.3
+              : placement.y + 0.1),
           footprint: footprintCells(placement),
         })),
         focus: {
@@ -689,6 +695,31 @@ export function bootstrapGame(root: HTMLElement): GameBootstrapHandle {
           world?.grantCoins(amount);
           return true;
         }
+        case 'purchase': {
+          const itemId = payload && typeof payload === 'object' &&
+            'itemId' in payload && typeof payload.itemId === 'string'
+            ? payload.itemId
+            : '';
+          return systemRuntime.purchase(itemId);
+        }
+        case 'commitPlacement': {
+          if (!payload || typeof payload !== 'object') return { ok: false };
+          const candidate = payload as {
+            itemId?: string; location?: LocationId; x?: number; y?: number;
+            rotation?: 0 | 90 | 180 | 270;
+          };
+          if (!candidate.itemId || !candidate.location ||
+            typeof candidate.x !== 'number' || typeof candidate.y !== 'number') return { ok: false };
+          return systemRuntime.commitPlacement({
+            itemId: candidate.itemId,
+            location: candidate.location,
+            x: candidate.x,
+            y: candidate.y,
+            rotation: candidate.rotation ?? 0,
+          });
+        }
+        case 'seedLegacyTabletopFixture':
+          return systemRuntime.seedLegacyTabletopFixtureForQa();
         case 'setPlayerTile': {
           if (!world || !payload || typeof payload !== 'object') return false;
           const candidate = payload as {

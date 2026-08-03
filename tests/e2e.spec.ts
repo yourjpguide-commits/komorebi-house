@@ -27,6 +27,13 @@ type QaState = {
     sku: string;
     zone: string;
     placementLayer: string;
+    x: number;
+    y: number;
+    support: null | {
+      parentInstanceId: string;
+      socket: string;
+      offset: { x: number; y: number };
+    };
     tileX: number;
     tileY: number;
     rotation: number;
@@ -62,6 +69,9 @@ type QaState = {
 type QaCommand =
   | "reset"
   | "grantCoins"
+  | "purchase"
+  | "commitPlacement"
+  | "seedLegacyTabletopFixture"
   | "setPlayerTile"
   | "advanceClock"
   | "samplePerformance"
@@ -641,6 +651,105 @@ test("moving then cancelling is lossless; moving then confirming is free", async
   expect(afterConfirm.placements.find((entry) => entry.id === placed.id)).toMatchObject({
     tileX: alternate!.tileX,
     tileY: alternate!.tileY,
+  });
+});
+
+test("tabletop support survives cancel, atomic table move, reload, and parent storage", async ({ page }) => {
+  await openFreshGame(page);
+  const initial = await qaState(page);
+  const table = initial.placements.find((item) => item.id === "starter-table")!;
+  const notebook = initial.placements.find((item) => item.id === "starter-notebook")!;
+  const lamp = initial.placements.find((item) => item.id === "starter-lamp")!;
+  expect(notebook).toMatchObject({
+    x: 285,
+    y: 169,
+    rotation: 270,
+    support: { parentInstanceId: table.id, socket: "notebook", offset: { x: -9, y: -21 } },
+  });
+  expect(lamp).toMatchObject({
+    x: 297.5,
+    y: 169.5,
+    support: { parentInstanceId: table.id, socket: "lamp", offset: { x: 3.5, y: -20.5 } },
+  });
+  expect(notebook.depth).toBeGreaterThan(table.depth);
+  expect(lamp.depth).toBeGreaterThan(table.depth);
+
+  expect(await qaCommand<{ ok: boolean }>(page, 'purchase', { itemId: 'seigaiha-notebook' }))
+    .toMatchObject({ ok: true });
+  expect(await qaCommand<{ ok: boolean; code?: string }>(page, 'commitPlacement', {
+    itemId: 'seigaiha-notebook', location: 'room', x: 294, y: 169, rotation: 0,
+  })).toMatchObject({ ok: false, code: 'TABLETOP_SOCKET_OCCUPIED' });
+
+  const beforeMove = await qaState(page);
+
+  await openCustomizer(page);
+  await clickViewportPoint(page, await qaQuery(page, "placementHitPoint", { id: table.id }));
+  await page.getByTestId("move-selected").click();
+  const alternate = (await placementTargets(page, table.sku, table.zone)).find(
+    (target) => target.valid && (target.tileX !== table.tileX || target.tileY !== table.tileY),
+  )!;
+  expect(alternate).toBeTruthy();
+  await clickViewportPoint(page, alternate);
+  await page.getByTestId("placement-cancel").click();
+  expect(normalizedPlacements(await qaState(page))).toEqual(normalizedPlacements(beforeMove));
+
+  await clickViewportPoint(page, await qaQuery(page, "placementHitPoint", { id: table.id }));
+  await page.getByTestId("move-selected").click();
+  await clickViewportPoint(page, alternate);
+  await page.getByTestId("placement-confirm").click();
+  await waitForSave(page);
+  const moved = await qaState(page);
+  const movedTable = moved.placements.find((item) => item.id === table.id)!;
+  const movedNotebook = moved.placements.find((item) => item.id === notebook.id)!;
+  const movedLamp = moved.placements.find((item) => item.id === lamp.id)!;
+  expect(movedNotebook).toMatchObject({
+    x: movedTable.x - 9,
+    y: movedTable.y - 21,
+    support: notebook.support,
+  });
+  expect(movedLamp).toMatchObject({
+    x: movedTable.x + 3.5,
+    y: movedTable.y - 20.5,
+    support: lamp.support,
+  });
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await enterGame(page);
+  const reloaded = await qaState(page);
+  expect(reloaded.placements.find((item) => item.id === notebook.id)).toMatchObject(movedNotebook);
+  expect(reloaded.placements.find((item) => item.id === lamp.id)).toMatchObject(movedLamp);
+  expect(reloaded.placements.find((item) => item.id === notebook.id)!.depth)
+    .toBeGreaterThan(reloaded.placements.find((item) => item.id === table.id)!.depth);
+
+  await openCustomizer(page);
+  await clickViewportPoint(page, await qaQuery(page, "placementHitPoint", { id: notebook.id }));
+  await expect(page.getByTestId("selected-object-panel")).toContainText("Seigaiha Notebook");
+  await page.getByTestId("placement-cancel").click();
+  await openCustomizer(page);
+  await clickViewportPoint(page, await qaQuery(page, "placementHitPoint", { id: table.id }));
+  await page.getByTestId("remove-selected").click();
+  const stored = await qaState(page);
+  expect(stored.placements.some((item) => [table.id, notebook.id, lamp.id].includes(item.id))).toBe(false);
+  expect(stored.placements.some((item) => item.support?.parentInstanceId === table.id)).toBe(false);
+});
+
+test("legacy tabletop migration is exact, bounded, and one-time in browser storage", async ({ page }) => {
+  await openFreshGame(page);
+  expect(await qaCommand(page, 'seedLegacyTabletopFixture')).toBe(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await enterGame(page);
+  const migrated = await qaState(page);
+  expect(migrated.placements.find((item) => item.id === 'starter-notebook')).toMatchObject({
+    x: 285, y: 169, rotation: 270,
+    support: { parentInstanceId: 'starter-table', socket: 'notebook', offset: { x: -9, y: -21 } },
+  });
+  expect(migrated.placements.find((item) => item.id === 'starter-lamp')).toMatchObject({
+    x: 305, y: 178, support: null,
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await enterGame(page);
+  expect((await qaState(page)).placements.find((item) => item.id === 'starter-lamp')).toMatchObject({
+    x: 305, y: 178, support: null,
   });
 });
 
