@@ -42,6 +42,7 @@ import {
 import { getLocationBlueprint } from '../game/locations';
 import { ART_KEYS } from '../game/pixelTextures';
 import { systemRuntime } from '../game/systemRuntime';
+import { worldFurnitureAsset } from '../game/worldAssets';
 import type {
   DecorDefinition,
   Direction,
@@ -175,7 +176,7 @@ export class WorldScene extends Phaser.Scene {
   private environment: LocationRenderResult | null = null;
   private locationObjects: Phaser.GameObjects.GameObject[] = [];
   private decorObjects: Phaser.GameObjects.GameObject[] = [];
-  private decorSprites = new Map<string, Phaser.GameObjects.Image>();
+  private decorSprites = new Map<string, Phaser.GameObjects.Image[]>();
   private collisionZones: Phaser.GameObjects.Zone[] = [];
   private collisionHandles: Phaser.Physics.Arcade.Collider[] = [];
   private ambientMotes: AmbientMote[] = [];
@@ -708,18 +709,45 @@ export class WorldScene extends Phaser.Scene {
             )
           : undefined;
       const presentationY = support?.y ?? placement.y;
-      const shadow = this.add
-        .image(placement.x, placement.y - 2, ART_KEYS.shadow)
-        .setOrigin(0.5)
-        .setScale(
-          Phaser.Math.Clamp(footprintWidth / 18, 0.65, 2.2),
-          Phaser.Math.Clamp(footprintHeight / 12, 0.55, 1.65),
-        )
-        .setAlpha(0.62)
-        .setDepth(DEPTH.worldObject + presentationY + 0.05);
-      const sprite = this.add
-        .image(placement.x, placement.y, textureKey)
-        .setOrigin(0.5, 1)
+      const asset = worldFurnitureAsset(textureKey);
+      const renderObjects: Phaser.GameObjects.Image[] = [];
+      if (asset?.castMask) {
+        renderObjects.push(
+          this.configureFurnitureImage(
+            this.add.image(placement.x, placement.y, asset.castMask.key),
+            textureKey,
+          )
+            .setAlpha(asset.castMask.alpha ?? 1)
+            .setDepth(DEPTH.worldObject + presentationY + 0.03),
+        );
+      }
+      if (asset?.contactMask) {
+        renderObjects.push(
+          this.configureFurnitureImage(
+            this.add.image(placement.x, placement.y, asset.contactMask.key),
+            textureKey,
+          )
+            .setAlpha(asset.contactMask.alpha ?? 1)
+            .setDepth(DEPTH.worldObject + presentationY + 0.05),
+        );
+      }
+      if (!asset?.castMask && !asset?.contactMask) {
+        renderObjects.push(
+          this.add
+            .image(placement.x, placement.y - 2, ART_KEYS.shadow)
+            .setOrigin(0.5)
+            .setScale(
+              Phaser.Math.Clamp(footprintWidth / 18, 0.65, 2.2),
+              Phaser.Math.Clamp(footprintHeight / 12, 0.55, 1.65),
+            )
+            .setAlpha(0.62)
+            .setDepth(DEPTH.worldObject + presentationY + 0.05),
+        );
+      }
+      const sprite = this.configureFurnitureImage(
+        this.add.image(placement.x, placement.y, textureKey),
+        textureKey,
+      )
         // The texture key already selects an authored cel for its supported
         // facing; runtime rotation would blur and falsify the pixel projection.
         .setAngle(0)
@@ -746,9 +774,20 @@ export class WorldScene extends Phaser.Scene {
         },
       );
 
-      this.decorObjects.push(shadow, sprite);
-      this.decorSprites.set(placement.instanceId, sprite);
+      renderObjects.push(sprite);
+      this.decorObjects.push(...renderObjects);
+      this.decorSprites.set(placement.instanceId, renderObjects);
     }
+  }
+
+  private configureFurnitureImage(
+    image: Phaser.GameObjects.Image,
+    textureKey: string,
+  ): Phaser.GameObjects.Image {
+    const asset = worldFurnitureAsset(textureKey);
+    return image
+      .setOrigin(...(asset?.origin ?? [0.5, 1]))
+      .setScale(asset?.displayScale ?? 1);
   }
 
   private updatePlayerMovement(time: number): void {
@@ -1159,13 +1198,18 @@ export class WorldScene extends Phaser.Scene {
       y: snapWorldCoordinate(this.player.y + direction.y * 32),
       rotation,
     };
-    const preview = this.add
-      .image(
+    const previewTextureKey = this.resolveFurnitureTextureKey(
+      definition,
+      rotation,
+    );
+    const preview = this.configureFurnitureImage(
+      this.add.image(
         start.x,
         start.y,
-        this.resolveFurnitureTextureKey(definition, rotation),
-      )
-      .setOrigin(0.5, 1)
+        previewTextureKey,
+      ),
+      previewTextureKey,
+    )
       .setAlpha(0.72)
       .setDepth(DEPTH.placement + start.y);
     const footprint = this.add.graphics().setDepth(DEPTH.placement - 2);
@@ -1187,7 +1231,7 @@ export class WorldScene extends Phaser.Scene {
     const original = existingInstanceId
       ? this.decorSprites.get(existingInstanceId)
       : undefined;
-    original?.setVisible(false);
+    original?.forEach((object) => object.setVisible(false));
     this.playPlacementFeedback('pickup');
     this.updatePlacement(start.x, start.y);
     this.publishState(true);
@@ -1242,6 +1286,7 @@ export class WorldScene extends Phaser.Scene {
     );
     if (placement.preview.texture.key !== previewTextureKey) {
       placement.preview.setTexture(previewTextureKey);
+      this.configureFurnitureImage(placement.preview, previewTextureKey);
     }
     placement.cursor
       .setTexture(
@@ -1468,7 +1513,7 @@ export class WorldScene extends Phaser.Scene {
     const original = this.placement.existingInstanceId
       ? this.decorSprites.get(this.placement.existingInstanceId)
       : undefined;
-    original?.setVisible(true);
+    original?.forEach((object) => object.setVisible(true));
     this.destroyPlacementObjects();
     if (playSound) emitAudio({ type: 'ui', action: 'back' });
     this.publishState(true);

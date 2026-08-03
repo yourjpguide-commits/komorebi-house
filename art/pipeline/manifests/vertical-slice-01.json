@@ -118,21 +118,45 @@
       "family": "starter-furniture",
       "kind": "furniture",
       "state": "runtime-approved",
+      "revision": "v3",
+      "sha256": "e0482c4ab6fb692a16882cb1a2da25b4ed317d8fb1b85c94e7c67ad71124eab9",
       "runtimeKey": "koh:decor:patchwork-zabuton",
-      "nativeCanvas": [32, 17],
+      "nativeCanvas": [72, 44],
       "runtimeOrigin": [0.5, 1],
+      "displayScale": 0.5,
       "footprint": [16, 12],
       "starterPlacement": [294, 210, 0],
-      "currentProducer": "public/assets/v2/furniture/patchwork-zabuton.png",
-      "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton.png",
+      "currentProducer": "public/assets/v3/furniture/zabuton-facing-0.png",
+      "replacementTarget": "public/assets/v3/furniture/zabuton-facing-0.png",
+      "castMask": { "path": "public/assets/v3/furniture/zabuton-facing-0-cast-mask.png", "sha256": "6e3cb3f1ee944d8da69e32deba0ab9cb0b2d73dbcad6a022ba85e321d69c7213", "alphaLevels": [0, 24, 57] },
+      "contactMask": { "path": "public/assets/v3/furniture/zabuton-facing-0-contact-mask.png", "sha256": "b7d5e5c6a90a16cddc6c31eb0e5e9afe40ca8f204286967bb30930e10a077a0e", "alphaLevels": [0, 112] },
       "currentFallbacks": [],
-      "sameChangeDeletionTargets": ["src/art/furniture.ts#patchwork-zabuton", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.patchwork-zabuton"],
+      "sameChangeDeletionTargets": ["public/assets/v2/furniture/patchwork-zabuton.png", "public/assets/v2/furniture/patchwork-zabuton-r90.png", "public/assets/v2/furniture/patchwork-zabuton-r180.png", "public/assets/v2/furniture/patchwork-zabuton-r270.png"],
       "retainedBlockers": [],
+      "approval": {
+        "juryDecision": "pass",
+        "juryScore": 94,
+        "juryCategoryMinimum": 8.5,
+        "runtimeIntegration": true,
+        "runtimeAssetSha256": "e0482c4ab6fb692a16882cb1a2da25b4ed317d8fb1b85c94e7c67ad71124eab9",
+        "desktopCaptures": [
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "50ee86a374139843a475ae684cdc1f4df5e2ab940bf881ecb52fbc1623282c29" },
+          { "viewport": [960, 540], "state": "furnished", "sha256": "ea0ead029d722fee0b606ceac5c9323d2b044588ca27475cf155410805ddc9c0" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "749990362469778d0dbbba86ff5275b627cddd9af6e4fc235a6b8ccd3b72041b" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "b9bd203e85247ede2209a5fe3045d6056455967863dc2443d0d07c53682157d9" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "209736305ba3752617dc48196cd0b65fb05fd358934563deb410129dd4a35458" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "20d9c64164331ad3fe3bc239d56a9f7018cc8413476d3a9e73e0c94de26d8d0e" }
+        ],
+        "nativeCaptures": [
+          { "viewport": [960, 540], "state": "furnished", "sha256": "ea0ead029d722fee0b606ceac5c9323d2b044588ca27475cf155410805ddc9c0" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "50ee86a374139843a475ae684cdc1f4df5e2ab940bf881ecb52fbc1623282c29" }
+        ]
+      },
       "proof": { "isolated": true, "anchor": true, "footprint": true, "runtimeCapture": true, "oldProducerDeleted": true },
       "derivedRotationCels": [
-        { "rotation": 90, "runtimeKey": "koh:decor:patchwork-zabuton:r90", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r90.png", "nativeCanvas": [17, 32] },
-        { "rotation": 180, "runtimeKey": "koh:decor:patchwork-zabuton:r180", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r180.png", "nativeCanvas": [32, 17] },
-        { "rotation": 270, "runtimeKey": "koh:decor:patchwork-zabuton:r270", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r270.png", "nativeCanvas": [17, 32] }
+        { "rotation": 90, "runtimeKey": "koh:decor:patchwork-zabuton:r90", "replacementTarget": "public/assets/v3/furniture/zabuton-facing-90.png", "nativeCanvas": [48, 68], "sha256": "c79e431a0c7c77ddabff31b68dd8ecdda5685bd9b1c6a0abbce4506d4ee322e8", "castMask": { "path": "public/assets/v3/furniture/zabuton-facing-90-cast-mask.png", "sha256": "afbb497d3a3691905d165a14e86d087e92a3a2de96beecc13f4fa56677492c8b", "alphaLevels": [0, 24, 57] }, "contactMask": { "path": "public/assets/v3/furniture/zabuton-facing-90-contact-mask.png", "sha256": "c5a3f6624f79c91a0b84e69cc239fd80fcb9debb60ea809409de096e6d872789", "alphaLevels": [0, 112] } },
+        { "rotation": 180, "runtimeKey": "koh:decor:patchwork-zabuton:r180", "replacementTarget": "public/assets/v3/furniture/zabuton-facing-180.png", "nativeCanvas": [72, 44], "sha256": "10eaff9da0b06b398d282c998289c6949722341e8a598698b95e67a53cb789e6", "castMask": { "path": "public/assets/v3/furniture/zabuton-facing-180-cast-mask.png", "sha256": "6e3cb3f1ee944d8da69e32deba0ab9cb0b2d73dbcad6a022ba85e321d69c7213", "alphaLevels": [0, 24, 57] }, "contactMask": { "path": "public/assets/v3/furniture/zabuton-facing-180-contact-mask.png", "sha256": "b7d5e5c6a90a16cddc6c31eb0e5e9afe40ca8f204286967bb30930e10a077a0e", "alphaLevels": [0, 112] } },
+        { "rotation": 270, "runtimeKey": "koh:decor:patchwork-zabuton:r270", "replacementTarget": "public/assets/v3/furniture/zabuton-facing-270.png", "nativeCanvas": [48, 68], "sha256": "5db984fefd80e444315c52d0efff0dffdfa85215feafb891a392eb9bc2fc9fcf", "castMask": { "path": "public/assets/v3/furniture/zabuton-facing-270-cast-mask.png", "sha256": "afbb497d3a3691905d165a14e86d087e92a3a2de96beecc13f4fa56677492c8b", "alphaLevels": [0, 24, 57] }, "contactMask": { "path": "public/assets/v3/furniture/zabuton-facing-270-contact-mask.png", "sha256": "c5a3f6624f79c91a0b84e69cc239fd80fcb9debb60ea809409de096e6d872789", "alphaLevels": [0, 112] } }
       ]
     },
     {
@@ -140,16 +164,40 @@
       "family": "starter-furniture",
       "kind": "furniture",
       "state": "runtime-approved",
+      "revision": "v3",
+      "sha256": "1a60aa68777704b3a1e387f0b2d2e998ef34e737086e5ba8ae4ff0e53e28d894",
       "runtimeKey": "koh:decor:folded-futon",
-      "nativeCanvas": [62, 35],
-      "runtimeOrigin": [0.5, 1],
+      "nativeCanvas": [144, 76],
+      "runtimeOrigin": [0.5, 0.9736842105263158],
+      "displayScale": 0.5,
       "footprint": [32, 12],
       "starterPlacement": [194, 212, 0],
-      "currentProducer": "public/assets/v2/furniture/folded-futon.png",
-      "replacementTarget": "public/assets/v2/furniture/folded-futon.png",
+      "currentProducer": "public/assets/v3/furniture/futon-bedding-native-v2.png",
+      "replacementTarget": "public/assets/v3/furniture/futon-bedding-native-v2.png",
+      "castMask": { "path": "public/assets/v3/furniture/futon-shadow-cast-native-v2.png", "sha256": "701acba7dabce198d26dd87acf674e9e158b8804d37783c41dfe9d255bc0b3a5", "alphaLevels": [0, 32, 48] },
+      "contactMask": { "path": "public/assets/v3/furniture/futon-shadow-contact-native-v2.png", "sha256": "868839472b66903484a7687f4d6a4c924ac1428a35f0acba2aac7edb38bb2809", "alphaLevels": [0, 72, 128] },
       "currentFallbacks": [],
-      "sameChangeDeletionTargets": ["src/art/furniture.ts#folded-futon", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.folded-futon"],
+      "sameChangeDeletionTargets": ["public/assets/v2/furniture/folded-futon.png"],
       "retainedBlockers": [],
+      "approval": {
+        "juryDecision": "pass",
+        "juryScore": 92,
+        "juryCategoryMinimum": 8.5,
+        "runtimeIntegration": true,
+        "runtimeAssetSha256": "1a60aa68777704b3a1e387f0b2d2e998ef34e737086e5ba8ae4ff0e53e28d894",
+        "desktopCaptures": [
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "50ee86a374139843a475ae684cdc1f4df5e2ab940bf881ecb52fbc1623282c29" },
+          { "viewport": [960, 540], "state": "furnished", "sha256": "ea0ead029d722fee0b606ceac5c9323d2b044588ca27475cf155410805ddc9c0" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "749990362469778d0dbbba86ff5275b627cddd9af6e4fc235a6b8ccd3b72041b" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "b9bd203e85247ede2209a5fe3045d6056455967863dc2443d0d07c53682157d9" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "209736305ba3752617dc48196cd0b65fb05fd358934563deb410129dd4a35458" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "20d9c64164331ad3fe3bc239d56a9f7018cc8413476d3a9e73e0c94de26d8d0e" }
+        ],
+        "nativeCaptures": [
+          { "viewport": [960, 540], "state": "furnished", "sha256": "ea0ead029d722fee0b606ceac5c9323d2b044588ca27475cf155410805ddc9c0" },
+          { "viewport": [1280, 720], "state": "furnished", "sha256": "50ee86a374139843a475ae684cdc1f4df5e2ab940bf881ecb52fbc1623282c29" }
+        ]
+      },
       "proof": { "isolated": true, "anchor": true, "footprint": true, "runtimeCapture": true, "oldProducerDeleted": true }
     },
     {

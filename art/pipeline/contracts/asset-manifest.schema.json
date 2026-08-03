@@ -137,6 +137,9 @@
         "runtimeKey": { "type": "string", "pattern": "^koh:" },
         "nativeCanvas": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
         "runtimeOrigin": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "displayScale": { "type": "number", "exclusiveMinimum": 0 },
+        "castMask": { "$ref": "#/$defs/mask" },
+        "contactMask": { "$ref": "#/$defs/mask" },
         "footprint": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
         "starterPlacement": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
         "currentProducer": { "type": "string" },
@@ -144,6 +147,10 @@
         "currentFallbacks": { "type": "array", "items": { "$ref": "#/$defs/fallback" } },
         "sameChangeDeletionTargets": { "type": "array", "minItems": 1, "items": { "type": "string" } },
         "retainedBlockers": { "type": "array", "items": { "type": "string" } },
+        "derivedRotationCels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rotationCel" }
+        },
         "lineage": {
           "type": "object",
           "additionalProperties": false,
@@ -191,6 +198,30 @@
             "oldProducerDeleted": { "type": "boolean" }
           }
         }
+      }
+    },
+    "mask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "alphaLevels"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "alphaLevels": { "type": "array", "minItems": 2, "items": { "type": "integer", "minimum": 0, "maximum": 255 }, "uniqueItems": true }
+      }
+    },
+    "rotationCel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rotation", "runtimeKey", "replacementTarget", "nativeCanvas"],
+      "properties": {
+        "rotation": { "enum": [90, 180, 270] },
+        "runtimeKey": { "type": "string", "pattern": "^koh:" },
+        "replacementTarget": { "type": "string" },
+        "nativeCanvas": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "castMask": { "$ref": "#/$defs/mask" },
+        "contactMask": { "$ref": "#/$defs/mask" }
       }
     },
     "captureReceipt": {

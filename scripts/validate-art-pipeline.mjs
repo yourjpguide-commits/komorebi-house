@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 const repoRoot = new URL("../", import.meta.url);
 const manifestPath = new URL("art/pipeline/manifests/vertical-slice-01.json", repoRoot);
@@ -39,8 +39,8 @@ for (const reference of manifest.references ?? []) {
 const expectedAssets = new Map([
   ["room-base", { runtimeKey: "koh:world:room", nativeCanvas: [960, 540], runtimeOrigin: [0, 0] }],
   ["round-chabudai", { runtimeKey: "koh:decor:round-chabudai", nativeCanvas: [58, 34], runtimeOrigin: [0.5, 1], footprint: [32, 24], starterPlacement: [294, 190, 0] }],
-  ["patchwork-zabuton", { runtimeKey: "koh:decor:patchwork-zabuton", nativeCanvas: [32, 17], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [294, 210, 0] }],
-  ["folded-futon", { runtimeKey: "koh:decor:folded-futon", nativeCanvas: [62, 35], runtimeOrigin: [0.5, 1], footprint: [32, 12], starterPlacement: [194, 212, 0] }],
+  ["patchwork-zabuton", { runtimeKey: "koh:decor:patchwork-zabuton", nativeCanvas: [72, 44], runtimeOrigin: [0.5, 1], displayScale: 0.5, footprint: [16, 12], starterPlacement: [294, 210, 0] }],
+  ["folded-futon", { runtimeKey: "koh:decor:folded-futon", nativeCanvas: [144, 76], runtimeOrigin: [0.5, 0.9736842105263158], displayScale: 0.5, footprint: [32, 12], starterPlacement: [194, 212, 0] }],
   ["seigaiha-notebook", { runtimeKey: "koh:decor:seigaiha-notebook", nativeCanvas: [20, 13], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [282, 178, 0] }],
   ["milk-glass-desk-lamp", { runtimeKey: "koh:decor:milk-glass-desk-lamp", nativeCanvas: [20, 28], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [306, 178, 0] }],
 ]);
@@ -74,9 +74,43 @@ for (const asset of manifest.assets) {
   if (asset.sha256 && await hashFile(asset.replacementTarget) !== asset.sha256) {
     fail(`${asset.id} runtime PNG hash does not match its approval receipt`);
   }
+  for (const [role, mask] of [["cast", asset.castMask], ["contact", asset.contactMask]]) {
+    if (!mask) continue;
+    const maskBytes = await readFile(new URL(mask.path, repoRoot));
+    if (!hasPngSignature(maskBytes)) fail(`${asset.id} ${role} mask is not a PNG`);
+    const maskDimensions = [maskBytes.readUInt32BE(16), maskBytes.readUInt32BE(20)];
+    if (!same(maskDimensions, asset.nativeCanvas)) fail(`${asset.id} ${role} mask dimensions drifted`);
+    if (await hashFile(mask.path) !== mask.sha256) fail(`${asset.id} ${role} mask hash drifted`);
+  }
+}
+
+const promotedFurniture = manifest.assets.filter((asset) =>
+  ["patchwork-zabuton", "folded-futon"].includes(asset.id));
+const promotedV3Files = new Set();
+for (const asset of promotedFurniture) {
+  for (const candidate of [
+    asset.replacementTarget,
+    asset.castMask?.path,
+    asset.contactMask?.path,
+    ...(asset.derivedRotationCels ?? []).flatMap((cel) => [
+      cel.replacementTarget,
+      cel.castMask?.path,
+      cel.contactMask?.path,
+    ]),
+  ]) {
+    if (candidate) promotedV3Files.add(candidate.split("/").at(-1));
+  }
+}
+const actualV3Files = (await readdir(new URL("public/assets/v3/furniture/", repoRoot))).sort();
+if (!same(actualV3Files, [...promotedV3Files].sort()) || actualV3Files.length !== 15) {
+  fail("v3 furniture directory must contain exactly the 15 promoted sprite/mask PNGs");
 }
 
 const rotatableFurnitureIds = new Set(["patchwork-zabuton", "seigaiha-notebook"]);
+const expectedRotationCanvases = new Map([
+  ["patchwork-zabuton", new Map([[90, [48, 68]], [180, [72, 44]], [270, [48, 68]]])],
+  ["seigaiha-notebook", new Map([[90, [13, 20]], [180, [20, 13]], [270, [13, 20]]])],
+]);
 for (const asset of manifest.assets) {
   const derivedRotationCels = asset.derivedRotationCels ?? [];
   if (derivedRotationCels.length > 0 && !rotatableFurnitureIds.has(asset.id)) {
@@ -94,9 +128,7 @@ for (const asset of manifest.assets) {
     }
     if (derivedKeys.has(cel.runtimeKey)) fail(`duplicate derived runtime key: ${cel.runtimeKey}`);
     derivedKeys.add(cel.runtimeKey);
-    const expectedDimensions = cel.rotation === 180
-      ? asset.nativeCanvas
-      : [asset.nativeCanvas[1], asset.nativeCanvas[0]];
+    const expectedDimensions = expectedRotationCanvases.get(asset.id)?.get(cel.rotation);
     if (!same(cel.nativeCanvas, expectedDimensions)) {
       fail(`derived dimensions drifted: ${asset.id}:${cel.rotation}`);
     }
@@ -108,6 +140,18 @@ for (const asset of manifest.assets) {
     const dimensions = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
     if (!same(dimensions, cel.nativeCanvas)) {
       fail(`derived cel PNG dimensions drifted: ${cel.replacementTarget}`);
+    }
+    if (cel.sha256 && await hashFile(cel.replacementTarget) !== cel.sha256) {
+      fail(`derived cel hash drifted: ${asset.id}:${cel.rotation}`);
+    }
+    for (const [role, mask] of [["cast", cel.castMask], ["contact", cel.contactMask]]) {
+      if (!mask) continue;
+      const maskBytes = await readFile(new URL(mask.path, repoRoot));
+      const maskDimensions = [maskBytes.readUInt32BE(16), maskBytes.readUInt32BE(20)];
+      if (!hasPngSignature(maskBytes) || !same(maskDimensions, cel.nativeCanvas)) {
+        fail(`derived ${role} mask drifted: ${asset.id}:${cel.rotation}`);
+      }
+      if (await hashFile(mask.path) !== mask.sha256) fail(`derived ${role} mask hash drifted: ${asset.id}:${cel.rotation}`);
     }
   }
 }
@@ -133,4 +177,4 @@ if (manifest.acceptance?.visualCategoryMinimum !== 8) fail("visual category thre
 if (!same(manifest.acceptance?.desktopCapture, [1280, 720, 1])) fail("desktop capture contract drifted");
 if (!same(manifest.acceptance?.mobileCapture, [390, 844, 2])) fail("mobile capture contract drifted");
 
-console.log(`Art pipeline OK: 480x270 simulation, 960x540 render, six exact PNGs locked, ${ids.size} single-authority rows, strict furniture cutover ready.`);
+console.log(`Art pipeline OK: 480x270 simulation, 960x540 render, 15 exact v3 furniture PNGs locked, ${ids.size} single-authority rows, strict furniture cutover ready.`);

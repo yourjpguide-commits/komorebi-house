@@ -8,9 +8,22 @@ export interface WorldBackplateAsset {
 export interface WorldFurnitureAsset {
   readonly key: string;
   readonly path: string;
-  readonly width: number;
-  readonly height: number;
+  readonly sourceSize: readonly [width: number, height: number];
+  readonly displayScale?: number;
+  readonly origin?: readonly [x: number, y: number];
+  readonly contactMask?: WorldFurnitureLayerAsset;
+  readonly castMask?: WorldFurnitureLayerAsset;
 }
+
+export interface WorldFurnitureLayerAsset {
+  readonly key: string;
+  readonly path: string;
+  readonly alpha?: number;
+}
+
+const furnitureAsset = (
+  asset: WorldFurnitureAsset,
+): Readonly<WorldFurnitureAsset> => Object.freeze(asset);
 
 const publicAsset = (path: string): string =>
   `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
@@ -41,73 +54,122 @@ export const WORLD_BACKPLATES: Readonly<Record<LocationId, WorldBackplateAsset>>
 
 export const WORLD_FURNITURE_ASSETS: ReadonlyArray<WorldFurnitureAsset> =
   Object.freeze([
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:round-chabudai',
       path: publicAsset('assets/v2/furniture/round-chabudai.png'),
-      width: 58,
-      height: 34,
+      sourceSize: [58, 34],
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:patchwork-zabuton',
-      path: publicAsset('assets/v2/furniture/patchwork-zabuton.png'),
-      width: 32,
-      height: 17,
+      path: publicAsset('assets/v3/furniture/zabuton-facing-0.png'),
+      sourceSize: [72, 44],
+      displayScale: 0.5,
+      origin: [0.5, 1],
+      castMask: {
+        key: 'koh:decor:patchwork-zabuton:cast',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-0-cast-mask.png'),
+      },
+      contactMask: {
+        key: 'koh:decor:patchwork-zabuton:contact',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-0-contact-mask.png'),
+      },
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:folded-futon',
-      path: publicAsset('assets/v2/furniture/folded-futon.png'),
-      width: 62,
-      height: 35,
+      path: publicAsset('assets/v3/furniture/futon-bedding-native-v2.png'),
+      sourceSize: [144, 76],
+      displayScale: 0.5,
+      origin: [0.5, 74 / 76],
+      castMask: {
+        key: 'koh:decor:folded-futon:cast',
+        path: publicAsset('assets/v3/furniture/futon-shadow-cast-native-v2.png'),
+      },
+      contactMask: {
+        key: 'koh:decor:folded-futon:contact',
+        path: publicAsset('assets/v3/furniture/futon-shadow-contact-native-v2.png'),
+      },
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:seigaiha-notebook',
       path: publicAsset('assets/v2/furniture/seigaiha-notebook.png'),
-      width: 20,
-      height: 13,
+      sourceSize: [20, 13],
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:milk-glass-desk-lamp',
       path: publicAsset('assets/v2/furniture/milk-glass-desk-lamp.png'),
-      width: 20,
-      height: 28,
+      sourceSize: [20, 28],
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:patchwork-zabuton:r90',
-      path: publicAsset('assets/v2/furniture/patchwork-zabuton-r90.png'),
-      width: 17,
-      height: 32,
+      path: publicAsset('assets/v3/furniture/zabuton-facing-90.png'),
+      sourceSize: [48, 68],
+      displayScale: 0.5,
+      origin: [0.5, 1],
+      castMask: {
+        key: 'koh:decor:patchwork-zabuton:r90:cast',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-90-cast-mask.png'),
+      },
+      contactMask: {
+        key: 'koh:decor:patchwork-zabuton:r90:contact',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-90-contact-mask.png'),
+      },
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:patchwork-zabuton:r180',
-      path: publicAsset('assets/v2/furniture/patchwork-zabuton-r180.png'),
-      width: 32,
-      height: 17,
+      path: publicAsset('assets/v3/furniture/zabuton-facing-180.png'),
+      sourceSize: [72, 44],
+      displayScale: 0.5,
+      origin: [0.5, 1],
+      castMask: {
+        key: 'koh:decor:patchwork-zabuton:r180:cast',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-180-cast-mask.png'),
+      },
+      contactMask: {
+        key: 'koh:decor:patchwork-zabuton:r180:contact',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-180-contact-mask.png'),
+      },
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:patchwork-zabuton:r270',
-      path: publicAsset('assets/v2/furniture/patchwork-zabuton-r270.png'),
-      width: 17,
-      height: 32,
+      path: publicAsset('assets/v3/furniture/zabuton-facing-270.png'),
+      sourceSize: [48, 68],
+      displayScale: 0.5,
+      origin: [0.5, 1],
+      castMask: {
+        key: 'koh:decor:patchwork-zabuton:r270:cast',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-270-cast-mask.png'),
+      },
+      contactMask: {
+        key: 'koh:decor:patchwork-zabuton:r270:contact',
+        path: publicAsset('assets/v3/furniture/zabuton-facing-270-contact-mask.png'),
+      },
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:seigaiha-notebook:r90',
       path: publicAsset('assets/v2/furniture/seigaiha-notebook-r90.png'),
-      width: 13,
-      height: 20,
+      sourceSize: [13, 20],
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:seigaiha-notebook:r180',
       path: publicAsset('assets/v2/furniture/seigaiha-notebook-r180.png'),
-      width: 20,
-      height: 13,
+      sourceSize: [20, 13],
     }),
-    Object.freeze({
+    furnitureAsset({
       key: 'koh:decor:seigaiha-notebook:r270',
       path: publicAsset('assets/v2/furniture/seigaiha-notebook-r270.png'),
-      width: 13,
-      height: 20,
+      sourceSize: [13, 20],
     }),
   ]);
+
+const WORLD_FURNITURE_ASSET_BY_KEY = new Map(
+  WORLD_FURNITURE_ASSETS.map((asset) => [asset.key, asset] as const),
+);
+
+export function worldFurnitureAsset(
+  key: string,
+): WorldFurnitureAsset | undefined {
+  return WORLD_FURNITURE_ASSET_BY_KEY.get(key);
+}
 
 export function worldBackplateAsset(location: LocationId): WorldBackplateAsset {
   return WORLD_BACKPLATES[location];

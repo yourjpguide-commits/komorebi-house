@@ -38,15 +38,19 @@ export class BootScene extends Phaser.Scene {
     Object.values(WORLD_BACKPLATES).forEach(({ key, path }) => {
       this.load.image(key, path);
     });
-    WORLD_FURNITURE_ASSETS.forEach(({ key, path }) => {
+    WORLD_FURNITURE_ASSETS.forEach(({ key, path, castMask, contactMask }) => {
       this.load.image(key, path);
+      if (castMask) this.load.image(castMask.key, castMask.path);
+      if (contactMask) this.load.image(contactMask.key, contactMask.path);
     });
   }
 
   create(): void {
     assertTextureDimensions(this, WORLD_BACKPLATES.room.key, 960, 540);
-    WORLD_FURNITURE_ASSETS.forEach(({ key, width, height }) => {
-      assertTextureDimensions(this, key, width, height);
+    WORLD_FURNITURE_ASSETS.forEach(({ key, sourceSize, castMask, contactMask }) => {
+      assertTextureDimensions(this, key, ...sourceSize);
+      if (castMask) assertTextureDimensions(this, castMask.key, ...sourceSize);
+      if (contactMask) assertTextureDimensions(this, contactMask.key, ...sourceSize);
     });
     registerPixelArtTextures(this as unknown as PixelTextureSceneLike, {
       // Authored backplates above are the sole live environment path. Passing
