@@ -1,6 +1,6 @@
 import {
   AVATAR_FRAME_COUNTS,
-  FURNITURE_IDS,
+  PROCEDURAL_FURNITURE_IDS,
   createAvatarSprite,
   createEnvironment,
   createFurnitureSprite,
@@ -67,10 +67,10 @@ for (const direction of ["north", "east", "south", "west"] satisfies readonly Ca
 }
 atlas.append(avatarGrid);
 
-atlas.append(heading("Complete catalog · 60 isolated sprites"));
+atlas.append(heading("Procedural furniture · 55 generated sprites"));
 const spriteGrid = document.createElement("section");
 spriteGrid.className = "sprites";
-for (const itemId of FURNITURE_IDS) {
+for (const itemId of PROCEDURAL_FURNITURE_IDS) {
   const card = document.createElement("article");
   card.className = "sprite";
   const art = createFurnitureSprite(itemId, { seed: "atlas" });

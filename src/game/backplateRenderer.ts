@@ -5,8 +5,7 @@ import { worldBackplateAsset } from './worldAssets';
 
 /**
  * Draws an authored location plate when it loaded successfully. Returning
- * `null` lets the deterministic procedural renderer remain an offline-safe
- * fallback.
+ * `null` allows retained fallbacks only for non-required locations.
  */
 export function renderAuthoredBackplate(
   scene: Phaser.Scene,

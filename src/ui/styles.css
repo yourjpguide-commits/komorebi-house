@@ -2061,7 +2061,6 @@
   z-index: 60;
   min-height: 218px;
   overflow: hidden;
-  pointer-events: auto;
   background:
     repeating-linear-gradient(90deg, rgba(72, 53, 38, 0.022) 0 1px, transparent 1px 7px),
     var(--kh-paper);

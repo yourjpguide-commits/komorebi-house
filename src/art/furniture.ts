@@ -73,6 +73,22 @@ export const FURNITURE_IDS = [
 ] as const;
 
 export type FurnitureId = (typeof FURNITURE_IDS)[number];
+export const EXTERNAL_FURNITURE_IDS = [
+  "round-chabudai",
+  "patchwork-zabuton",
+  "folded-futon",
+  "seigaiha-notebook",
+  "milk-glass-desk-lamp",
+] as const;
+type ExternalFurnitureId = (typeof EXTERNAL_FURNITURE_IDS)[number];
+
+const EXTERNAL_FURNITURE_ID_SET: ReadonlySet<string> = new Set(EXTERNAL_FURNITURE_IDS);
+
+export const PROCEDURAL_FURNITURE_IDS = Object.freeze(
+  FURNITURE_IDS.filter(
+    (id): id is Exclude<FurnitureId, ExternalFurnitureId> => !EXTERNAL_FURNITURE_ID_SET.has(id),
+  ),
+);
 export type FurnitureRotation = 0 | 90 | 180 | 270;
 
 const NO_FURNITURE_ROTATION = Object.freeze([0] as const);
@@ -146,7 +162,7 @@ const specs = {
   "sumi-calligraphy-set": [44, 25, "study", "tabletop"],
   "kana-flashcard-ring": [16, 18, "study", "tabletop"],
   "walnut-focus-radio": [34, 29, "study", "tabletop"],
-  "milk-glass-desk-lamp": [28, 39, "lighting", "tabletop"],
+  "milk-glass-desk-lamp": [20, 28, "lighting", "tabletop"],
   "cedar-andon": [30, 46, "lighting", "furniture-high"],
   "pleated-washi-pendant": [30, 49, "lighting", "canopy"],
   "shoji-window-lamp": [34, 47, "lighting", "furniture-high"],
@@ -197,7 +213,6 @@ const FURNITURE_RENDER_SCALE: Readonly<Partial<Record<FurnitureId, number>>> = O
   "slim-laptop-riser": 0.7,
   "sumi-calligraphy-set": 0.7,
   "walnut-focus-radio": 0.8,
-  "milk-glass-desk-lamp": 0.7,
   "firefly-glass-jar": 0.7,
   "star-map-projector": 0.75,
   "steam-tea-tray": 0.72,
@@ -301,17 +316,12 @@ const FINISH_EXCLUDED_COLORS = new Set([
 ]);
 const CONTOUR_COLORS = new Set(["#2B2524", "#312824", "#393230"]);
 /**
- * The opening room is a bright late-morning plate. These are its shipped
- * starter surfaces, so they receive a few transparent warm flecks within
- * existing material clusters. This is an art grade, not a positional light
- * system: placement, persistence, and world lighting remain renderer-owned.
+ * The opening room is a bright late-morning plate. This procedural starter
+ * receives a few transparent warm flecks within existing material clusters.
+ * This is an art grade, not a positional light system: placement, persistence,
+ * and world lighting remain renderer-owned.
  */
 const SUNLIT_ROOM_STARTERS = new Set<FurnitureId>([
-  "patchwork-zabuton",
-  "round-chabudai",
-  "folded-futon",
-  "seigaiha-notebook",
-  "milk-glass-desk-lamp",
   "steam-tea-tray",
 ]);
 
@@ -475,80 +485,6 @@ function paintComfort(
 ): void {
   shadow(p, width, height);
   switch (id) {
-    case "patchwork-zabuton":
-      // A low, diamond-shaped floor cushion: the cool lower rim and broken
-      // stitched seams give it the same 3/4, weathered cadence as tatami.
-      p.polygon([[2, 8], [8, 3], [23, 3], [30, 8], [27, 13], [21, 16], [8, 15], [2, 11]], palette.outline);
-      p.polygon([[4, 8], [9, 4], [22, 4], [28, 8], [25, 12], [20, 14], [9, 13], [4, 10]], PALETTE.indigoDeep);
-      p.polygon([[5, 11], [10, 13], [20, 14], [26, 12], [25, 14], [20, 16], [9, 15], [4, 12]], PALETTE.plum);
-      p.polygon([[7, 8], [10, 5], [14, 5], [14, 9], [8, 10]], PALETTE.plum);
-      p.polygon([[15, 5], [21, 5], [26, 8], [22, 10], [15, 9]], PALETTE.tatami);
-      p.polygon([[8, 10], [14, 9], [14, 12], [10, 12]], PALETTE.sakuraShadow);
-      p.polygon([[15, 10], [22, 10], [24, 12], [20, 13], [15, 12]], PALETTE.soil);
-      p.hLine(7, 11, 4, PALETTE.indigoLight);
-      p.hLine(17, 12, 4, PALETTE.washiShadow);
-      p.hLine(10, 14, 10, PALETTE.indigoDeep);
-      p.vLine(14, 5, 8, PALETTE.hinokiDark);
-      p.pixel(15, 8, PALETTE.washi);
-      p.pixel(6, 9, PALETTE.indigoLight);
-      p.pixel(25, 8, PALETTE.washiShadow);
-      p.pixel(8, 6, PALETTE.hinokiLight);
-      break;
-    case "round-chabudai":
-      // A squat 3/4 round table: the oval top is deliberately asymmetric,
-      // with a visible front apron, short splayed legs, and tight foot cues.
-      p.ellipse(29, 14, 27, 9, palette.outline);
-      p.ellipse(29, 12, 26, 8, palette.shadow);
-      p.ellipse(28, 9, 24, 7, palette.mid);
-      p.ellipse(27, 7, 20, 5, palette.light);
-      p.hLine(14, 7, 11, "#D9B77F");
-      p.hLine(29, 6, 10, "#B98050");
-      p.hLine(8, 12, 11, "#B17E50");
-      p.hLine(23, 10, 18, "#9B6844");
-      p.hLine(18, 16, 27, palette.shadow, 2);
-      p.polygon([[11, 18], [16, 18], [15, 28], [10, 29]], palette.outline);
-      p.polygon([[12, 18], [15, 18], [14, 27], [11, 27]], palette.shadow);
-      p.polygon([[43, 18], [48, 17], [49, 28], [44, 28]], palette.outline);
-      p.polygon([[44, 18], [47, 18], [48, 26], [45, 26]], palette.shadow);
-      p.hLine(8, 29, 8, palette.outline, 2);
-      p.hLine(43, 28, 8, palette.outline, 2);
-      p.hLine(10, 30, 5, "#6F513B");
-      p.hLine(44, 29, 5, "#6F513B");
-      p.pixel(14, 11, "#D9B77F");
-      p.pixel(20, 8, "#E8D7B4");
-      p.pixel(36, 14, "#80553B");
-      // A tea cup catches the same warm window light without becoming a
-      // floating icon: saucer, shaded bowl, rim, and a short steam cadence.
-      p.ellipse(41, 9, 5, 2, PALETTE.ceramicShadow);
-      p.rect(38, 4, 7, 6, PALETTE.ceramicShadow);
-      p.rect(39, 4, 5, 5, PALETTE.ceramic);
-      p.hLine(39, 4, 5, PALETTE.washi);
-      p.pixel(39, 6, PALETTE.washi);
-      littleSteam(p, 41, 4);
-      break;
-    case "folded-futon":
-      // Soft, uneven quilt folds read as a weighted textile stack rather than
-      // a box. The cool underside carries the room's shaded tatami rhythm.
-      p.polygon([[6, 18], [12, 13], [49, 14], [56, 18], [53, 27], [10, 28]], palette.outline);
-      p.polygon([[8, 18], [13, 15], [48, 16], [53, 19], [50, 25], [12, 26]], PALETTE.plum);
-      p.polygon([[10, 21], [51, 20], [50, 25], [46, 27], [14, 26], [10, 24]], PALETTE.sakuraShadow);
-      p.hLine(14, 22, 10, PALETTE.sakura);
-      p.hLine(28, 24, 8, PALETTE.plum);
-      p.hLine(40, 22, 7, PALETTE.sakura);
-      p.hLine(17, 26, 11, PALETTE.indigoDeep);
-      p.pixel(17, 24, PALETTE.washiShadow);
-      p.pixel(38, 24, PALETTE.washiShadow);
-      p.polygon([[8, 11], [14, 6], [47, 7], [55, 11], [52, 18], [11, 17]], PALETTE.hinokiDark);
-      p.polygon([[10, 11], [15, 7], [46, 8], [52, 11], [49, 15], [13, 15]], PALETTE.washiShadow);
-      p.polygon([[13, 8], [45, 8], [50, 11], [46, 13], [15, 12]], PALETTE.washi);
-      p.hLine(14, 14, 13, PALETTE.sakuraShadow);
-      p.hLine(32, 14, 14, PALETTE.tatamiShadow);
-      p.hLine(18, 10, 8, "#F0DFBA");
-      p.rect(40, 8, 9, 5, PALETTE.sakuraLight);
-      p.hLine(42, 9, 5, PALETTE.washi);
-      p.pixel(47, 12, PALETTE.sakuraShadow);
-      p.pixel(12, 17, PALETTE.washiShadow);
-      break;
     case "hinoki-writing-desk":
       p.rect(4, 15, 60, 18, palette.outline);
       p.rect(6, 11, 56, 17, palette.mid);
@@ -662,23 +598,6 @@ function paintStudy(
 ): void {
   shadow(p, width, height, width * 0.28);
   switch (id) {
-    case "seigaiha-notebook":
-      // A paper-thin, skewed notebook that follows the low table's top plane.
-      // Its quiet lower rim stops it reading as a flat blue UI tile.
-      p.polygon([[1, 5], [15, 2], [19, 8], [5, 12]], palette.outline);
-      p.polygon([[3, 5], [14, 3], [17, 8], [5, 10]], PALETTE.indigoDeep);
-      p.polygon([[5, 10], [17, 8], [18, 9], [6, 12]], PALETTE.plum);
-      p.hLine(5, 5, 3, PALETTE.sky);
-      p.hLine(10, 4, 3, PALETTE.indigoLight);
-      p.pixel(4, 7, PALETTE.sky);
-      p.pixel(8, 7, PALETTE.indigoDeep);
-      p.pixel(12, 6, PALETTE.indigoDeep);
-      p.hLine(6, 9, 4, PALETTE.indigoLight);
-      p.hLine(12, 8, 3, PALETTE.indigoLight);
-      p.hLine(6, 10, 10, PALETTE.washi);
-      p.vLine(3, 5, 6, PALETTE.washiShadow);
-      p.pixel(15, 5, PALETTE.skyLight);
-      break;
     case "cedar-pencil-cup":
       p.rect(3, 9, 12, 15, palette.outline);
       p.rect(5, 10, 8, 13, palette.mid);
@@ -786,23 +705,6 @@ function paintLighting(
     shadow(p, width, height, width * 0.26);
   }
   switch (id) {
-    case "milk-glass-desk-lamp":
-      // Slightly skewed milk glass. Its inner glow is restrained so it shares
-      // the existing shoji/window warmth instead of looking like a UI lamp.
-      p.ellipse(14, 34, 9, 3, palette.outline);
-      p.ellipse(14, 32, 7, 3, PALETTE.amberDeep);
-      p.ellipse(13, 31, 5, 2, PALETTE.amber);
-      p.polygon([[12, 17], [16, 17], [17, 31], [12, 31]], PALETTE.amberDeep);
-      p.polygon([[13, 18], [15, 18], [16, 29], [13, 29]], PALETTE.amberLight);
-      p.polygon([[7, 8], [20, 7], [23, 18], [4, 18]], PALETTE.hinokiDark);
-      p.polygon([[9, 7], [19, 7], [21, 15], [6, 15]], PALETTE.amberDeep);
-      p.polygon([[10, 8], [18, 8], [19, 13], [8, 14]], PALETTE.amber);
-      p.polygon([[8, 14], [20, 13], [21, 16], [7, 17]], PALETTE.amberDeep);
-      p.hLine(9, 14, 10, PALETTE.amberLight);
-      p.hLine(11, 8, 6, PALETTE.glow);
-      p.pixel(9, 11, PALETTE.washi);
-      p.pixel(18, 14, PALETTE.washiShadow);
-      break;
     case "cedar-andon":
       p.rect(4, 5, 22, 39, palette.outline);
       p.rect(7, 8, 16, 32, PALETTE.amber);
@@ -1300,14 +1202,17 @@ function isFurnitureId(value: string): value is FurnitureId {
 }
 
 /**
- * Every catalog item has an explicit deterministic recipe. Unknown IDs still
- * resolve to an attractive labeled parcel, which keeps save migrations playable
+ * Procedural catalog IDs have deterministic recipes. External IDs fail closed;
+ * unknown IDs use the migration parcel, which keeps save migrations playable
  * while surfacing the missing visual through metadata.
  */
 export function createFurnitureSprite(
   itemId: FurnitureId | string,
   options: FurnitureSpriteOptions = {},
 ): PixelArt {
+  if (EXTERNAL_FURNITURE_ID_SET.has(itemId)) {
+    throw new Error(`${itemId} is an external furniture asset; no procedural recipe exists`);
+  }
   const known = isFurnitureId(itemId);
   const rotation = options.rotation ?? 0;
   if (!furnitureSupportedRotations(itemId).includes(rotation)) {

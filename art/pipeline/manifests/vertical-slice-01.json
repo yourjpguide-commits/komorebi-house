@@ -38,9 +38,9 @@
     }
   ],
   "cutover": {
-    "externalFurnitureLoader": "absent-blocked",
-    "strictRequiredAssetFailure": "not-implemented-blocked",
-    "imageGenerationAuthorized": false,
+    "externalFurnitureLoader": "strict-ready",
+    "strictRequiredAssetFailure": "implemented",
+    "imageGenerationAuthorized": true,
     "newRuntimeFiles": 0,
     "newRenderers": 0,
     "newFeatureFlags": 0,
@@ -61,12 +61,10 @@
       "runtimeOrigin": [0, 0],
       "currentProducer": "public/assets/world/room-base.png",
       "replacementTarget": "public/assets/world/room-base.png",
-      "currentFallbacks": [
-        { "file": "src/game/locationRenderer.ts", "symbol": "renderRoom", "scope": "room-only procedural environment" }
-      ],
+      "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/game/locationRenderer.ts#renderRoom"],
-      "retainedBlockers": ["src/game/locationRenderer.ts remains shared by garden, cafe, and park"],
-      "proof": { "isolated": false, "anchor": true, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+      "retainedBlockers": [],
+      "proof": { "isolated": false, "anchor": true, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true }
     },
     {
       "id": "round-chabudai",
@@ -78,18 +76,12 @@
       "runtimeOrigin": [0.5, 1],
       "footprint": [32, 24],
       "starterPlacement": [294, 190, 0],
-      "currentProducer": "src/art/furniture.ts#round-chabudai",
-      "replacementTarget": null,
-      "currentFallbacks": [
-        { "file": "src/game/catalogAdapter.ts", "symbol": "FALLBACK_ART_ALIASES.round-chabudai", "scope": "alias to kotatsu" },
-        { "file": "src/game/pixelTextures.ts", "symbol": "registerFallbackPixelTextures", "scope": "kotatsu texture producer" }
-      ],
+      "currentProducer": "public/assets/v2/furniture/round-chabudai.png",
+      "replacementTarget": "public/assets/v2/furniture/round-chabudai.png",
+      "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#round-chabudai", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.round-chabudai"],
-      "retainedBlockers": [
-        "no external furniture image loader exists",
-        "src/game/pixelTextures.ts remains shared by avatar, shadow, cursor, particle, and unrelated catalog fallback consumers"
-      ],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+      "retainedBlockers": [],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true }
     },
     {
       "id": "patchwork-zabuton",
@@ -101,18 +93,17 @@
       "runtimeOrigin": [0.5, 1],
       "footprint": [16, 12],
       "starterPlacement": [294, 210, 0],
-      "currentProducer": "src/art/furniture.ts#patchwork-zabuton",
-      "replacementTarget": null,
-      "currentFallbacks": [
-        { "file": "src/game/catalogAdapter.ts", "symbol": "FALLBACK_ART_ALIASES.patchwork-zabuton", "scope": "alias to zabuton" },
-        { "file": "src/game/pixelTextures.ts", "symbol": "registerFallbackPixelTextures", "scope": "zabuton texture producer" }
-      ],
+      "currentProducer": "public/assets/v2/furniture/patchwork-zabuton.png",
+      "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton.png",
+      "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#patchwork-zabuton", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.patchwork-zabuton"],
-      "retainedBlockers": [
-        "no external furniture image loader exists",
-        "src/game/pixelTextures.ts remains shared by avatar, shadow, cursor, particle, and unrelated catalog fallback consumers"
-      ],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+      "retainedBlockers": [],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true },
+      "derivedRotationCels": [
+        { "rotation": 90, "runtimeKey": "koh:decor:patchwork-zabuton:r90", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r90.png", "nativeCanvas": [17, 32] },
+        { "rotation": 180, "runtimeKey": "koh:decor:patchwork-zabuton:r180", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r180.png", "nativeCanvas": [32, 17] },
+        { "rotation": 270, "runtimeKey": "koh:decor:patchwork-zabuton:r270", "replacementTarget": "public/assets/v2/furniture/patchwork-zabuton-r270.png", "nativeCanvas": [17, 32] }
+      ]
     },
     {
       "id": "folded-futon",
@@ -124,18 +115,12 @@
       "runtimeOrigin": [0.5, 1],
       "footprint": [32, 12],
       "starterPlacement": [194, 212, 0],
-      "currentProducer": "src/art/furniture.ts#folded-futon",
-      "replacementTarget": null,
-      "currentFallbacks": [
-        { "file": "src/game/catalogAdapter.ts", "symbol": "FALLBACK_ART_ALIASES.folded-futon", "scope": "alias to futon" },
-        { "file": "src/game/pixelTextures.ts", "symbol": "registerFallbackPixelTextures", "scope": "futon texture producer" }
-      ],
+      "currentProducer": "public/assets/v2/furniture/folded-futon.png",
+      "replacementTarget": "public/assets/v2/furniture/folded-futon.png",
+      "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#folded-futon", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.folded-futon"],
-      "retainedBlockers": [
-        "no external furniture image loader exists",
-        "src/game/pixelTextures.ts remains shared by avatar, shadow, cursor, particle, and unrelated catalog fallback consumers"
-      ],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+      "retainedBlockers": [],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true }
     },
     {
       "id": "seigaiha-notebook",
@@ -147,12 +132,17 @@
       "runtimeOrigin": [0.5, 1],
       "footprint": [16, 12],
       "starterPlacement": [282, 178, 0],
-      "currentProducer": "src/art/furniture.ts#seigaiha-notebook",
-      "replacementTarget": null,
+      "currentProducer": "public/assets/v2/furniture/seigaiha-notebook.png",
+      "replacementTarget": "public/assets/v2/furniture/seigaiha-notebook.png",
       "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#seigaiha-notebook"],
-      "retainedBlockers": ["no external furniture image loader exists"],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+      "retainedBlockers": [],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true },
+      "derivedRotationCels": [
+        { "rotation": 90, "runtimeKey": "koh:decor:seigaiha-notebook:r90", "replacementTarget": "public/assets/v2/furniture/seigaiha-notebook-r90.png", "nativeCanvas": [13, 20] },
+        { "rotation": 180, "runtimeKey": "koh:decor:seigaiha-notebook:r180", "replacementTarget": "public/assets/v2/furniture/seigaiha-notebook-r180.png", "nativeCanvas": [20, 13] },
+        { "rotation": 270, "runtimeKey": "koh:decor:seigaiha-notebook:r270", "replacementTarget": "public/assets/v2/furniture/seigaiha-notebook-r270.png", "nativeCanvas": [13, 20] }
+      ]
     },
     {
       "id": "milk-glass-desk-lamp",
@@ -160,16 +150,16 @@
       "kind": "furniture",
       "state": "brief",
       "runtimeKey": "koh:decor:milk-glass-desk-lamp",
-      "nativeCanvas": [28, 39],
+      "nativeCanvas": [20, 28],
       "runtimeOrigin": [0.5, 1],
       "footprint": [16, 12],
       "starterPlacement": [306, 178, 0],
-      "currentProducer": "src/art/furniture.ts#milk-glass-desk-lamp",
-      "replacementTarget": null,
+      "currentProducer": "public/assets/v2/furniture/milk-glass-desk-lamp.png",
+      "replacementTarget": "public/assets/v2/furniture/milk-glass-desk-lamp.png",
       "currentFallbacks": [],
       "sameChangeDeletionTargets": ["src/art/furniture.ts#milk-glass-desk-lamp"],
-      "retainedBlockers": ["no external furniture image loader exists"],
-      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+      "retainedBlockers": [],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": true }
     }
   ],
   "acceptance": {

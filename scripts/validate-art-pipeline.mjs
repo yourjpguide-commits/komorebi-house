@@ -10,6 +10,8 @@ const fail = (message) => {
 };
 
 const same = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const hasPngSignature = (bytes) => bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE);
 const hashFile = async (path) =>
   createHash("sha256").update(await readFile(new URL(path, repoRoot))).digest("hex");
 
@@ -39,7 +41,7 @@ const expectedAssets = new Map([
   ["patchwork-zabuton", { runtimeKey: "koh:decor:patchwork-zabuton", nativeCanvas: [32, 17], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [294, 210, 0] }],
   ["folded-futon", { runtimeKey: "koh:decor:folded-futon", nativeCanvas: [62, 35], runtimeOrigin: [0.5, 1], footprint: [32, 12], starterPlacement: [194, 212, 0] }],
   ["seigaiha-notebook", { runtimeKey: "koh:decor:seigaiha-notebook", nativeCanvas: [20, 13], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [282, 178, 0] }],
-  ["milk-glass-desk-lamp", { runtimeKey: "koh:decor:milk-glass-desk-lamp", nativeCanvas: [28, 39], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [306, 178, 0] }],
+  ["milk-glass-desk-lamp", { runtimeKey: "koh:decor:milk-glass-desk-lamp", nativeCanvas: [20, 28], runtimeOrigin: [0.5, 1], footprint: [16, 12], starterPlacement: [306, 178, 0] }],
 ]);
 const ids = new Set();
 const keys = new Set();
@@ -62,11 +64,49 @@ for (const asset of manifest.assets ?? []) {
 }
 if (!same([...ids].sort(), [...expectedAssets.keys()].sort())) fail("first proof must contain exactly room-base plus five starter assets");
 
-const roomAsset = manifest.assets.find((asset) => asset.id === "room-base");
-if (roomAsset?.replacementTarget !== "public/assets/world/room-base.png") fail("room-base must replace the existing path in place");
-const roomBytes = await readFile(new URL(roomAsset.replacementTarget, repoRoot));
-if (roomBytes.toString("ascii", 1, 4) !== "PNG") fail("room-base is not a PNG");
-if (!same([roomBytes.readUInt32BE(16), roomBytes.readUInt32BE(20)], [480, 270])) fail("room-base must remain exactly 480x270");
+for (const asset of manifest.assets) {
+  if (typeof asset.replacementTarget !== "string") fail(`asset must replace a PNG in place: ${asset.id}`);
+  const bytes = await readFile(new URL(asset.replacementTarget, repoRoot));
+  if (!hasPngSignature(bytes)) fail(`${asset.id} is not a PNG`);
+  const dimensions = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
+  if (!same(dimensions, asset.nativeCanvas)) fail(`${asset.id} must remain exactly ${asset.nativeCanvas.join("x")}`);
+}
+
+const rotatableFurnitureIds = new Set(["patchwork-zabuton", "seigaiha-notebook"]);
+for (const asset of manifest.assets) {
+  const derivedRotationCels = asset.derivedRotationCels ?? [];
+  if (derivedRotationCels.length > 0 && !rotatableFurnitureIds.has(asset.id)) {
+    fail(`derived rotation cels are not allowed for ${asset.id}`);
+  }
+  if (rotatableFurnitureIds.has(asset.id)
+    && !same(derivedRotationCels.map((cel) => cel.rotation).sort((a, b) => a - b), [90, 180, 270])) {
+    fail(`${asset.id} must declare 90, 180, and 270 degree derived cels`);
+  }
+  const derivedKeys = new Set();
+  for (const cel of derivedRotationCels) {
+    if (![90, 180, 270].includes(cel.rotation)) fail(`illegal derived rotation: ${asset.id}:${cel.rotation}`);
+    if (cel.runtimeKey !== `${asset.runtimeKey}:r${cel.rotation}`) {
+      fail(`derived runtime key drifted: ${asset.id}:${cel.rotation}`);
+    }
+    if (derivedKeys.has(cel.runtimeKey)) fail(`duplicate derived runtime key: ${cel.runtimeKey}`);
+    derivedKeys.add(cel.runtimeKey);
+    const expectedDimensions = cel.rotation === 180
+      ? asset.nativeCanvas
+      : [asset.nativeCanvas[1], asset.nativeCanvas[0]];
+    if (!same(cel.nativeCanvas, expectedDimensions)) {
+      fail(`derived dimensions drifted: ${asset.id}:${cel.rotation}`);
+    }
+    if (typeof cel.replacementTarget !== "string") {
+      fail(`derived cel must replace a PNG in place: ${asset.id}:${cel.rotation}`);
+    }
+    const bytes = await readFile(new URL(cel.replacementTarget, repoRoot));
+    if (!hasPngSignature(bytes)) fail(`derived cel is not a PNG: ${cel.replacementTarget}`);
+    const dimensions = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
+    if (!same(dimensions, cel.nativeCanvas)) {
+      fail(`derived cel PNG dimensions drifted: ${cel.replacementTarget}`);
+    }
+  }
+}
 
 const cutover = manifest.cutover ?? {};
 for (const field of ["newRuntimeFiles", "newRenderers", "newFeatureFlags", "newAtlases", "newMapSchemas", "newMigrationLayers", "newDuplicateAssetPaths", "maxNetRuntimeSourceLines"]) {
@@ -82,10 +122,11 @@ if (cutover.externalFurnitureLoader === "absent-blocked") {
 const strictCutoverReady = cutover.externalFurnitureLoader === "strict-ready"
   && cutover.strictRequiredAssetFailure === "implemented";
 if (cutover.imageGenerationAuthorized !== strictCutoverReady) fail("ImageGen authorization and strict cutover readiness disagree");
+if (!strictCutoverReady) fail("strict-ready external furniture cutover is required");
 
 if (manifest.acceptance?.visualScoreMinimum !== 85) fail("visual score threshold drifted");
 if (manifest.acceptance?.visualCategoryMinimum !== 8) fail("visual category threshold drifted");
 if (!same(manifest.acceptance?.desktopCapture, [1280, 720, 1])) fail("desktop capture contract drifted");
 if (!same(manifest.acceptance?.mobileCapture, [390, 844, 2])) fail("mobile capture contract drifted");
 
-console.log(`Art pipeline OK: original 480x270 room locked, ${ids.size} single-authority rows, ImageGen blocked pending strict furniture cutover.`);
+console.log(`Art pipeline OK: six exact PNGs locked, ${ids.size} single-authority rows, strict furniture cutover ready.`);

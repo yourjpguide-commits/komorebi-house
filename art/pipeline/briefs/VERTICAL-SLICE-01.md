@@ -21,7 +21,7 @@ Only six runtime assets belong to the first proof:
 3. `patchwork-zabuton` — transparent 32 × 17 source canvas; existing placement `(294,210)`.
 4. `folded-futon` — transparent 62 × 35 source canvas; existing placement `(194,212)`.
 5. `seigaiha-notebook` — transparent 20 × 13 source canvas; existing placement `(282,178)`.
-6. `milk-glass-desk-lamp` — transparent 28 × 39 source canvas; existing placement `(306,178)`.
+6. `milk-glass-desk-lamp` — transparent 20 × 28 source canvas; existing placement `(306,178)`.
 
 The five movable assets are one coordinated visual family but receive independent acceptance decisions. A failed member does not inherit another member's approval.
 

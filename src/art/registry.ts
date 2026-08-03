@@ -11,7 +11,7 @@ import {
 } from "./environments";
 import {
   createFurnitureSprite,
-  FURNITURE_IDS,
+  PROCEDURAL_FURNITURE_IDS,
   furnitureSupportedRotations,
   type FurnitureRotation,
   type FurnitureSpriteOptions,
@@ -168,7 +168,7 @@ export function registerPixelArtTextures(
   }
 
   const furnitureRotations = options.furnitureRotations ?? ([0] as const);
-  for (const itemId of options.itemIds ?? FURNITURE_IDS) {
+  for (const itemId of options.itemIds ?? PROCEDURAL_FURNITURE_IDS) {
     const supportedRotations = furnitureSupportedRotations(itemId);
     for (const rotation of furnitureRotations) {
       if (!supportedRotations.includes(rotation)) continue;

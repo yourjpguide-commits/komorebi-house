@@ -3,6 +3,7 @@ import {
   createFurnitureSprite,
   furnitureSupportedRotations,
 } from "../art/furniture";
+import { WORLD_FURNITURE_ASSETS } from "../game/worldAssets";
 import type {
   CatalogItem,
   FocusActivity,
@@ -59,9 +60,9 @@ function compactLocationKana(
 }
 
 /**
- * Rotation is only offered when both the placement record and the authored
- * pixel-art recipe support another facing. Upright props deliberately have a
- * single camera-facing cel, so sending a rotate command for them is a lie.
+ * Rotation is only offered when both the placement record and authored texture
+ * cels support another facing. Upright props deliberately have a single
+ * camera-facing cel, so sending a rotate command for them is a lie.
  */
 function supportsAuthoredRotation(
   item: Pick<CatalogItem, "id" | "rotatable"> | undefined,
@@ -77,6 +78,14 @@ function itemArt(item: CatalogItem, compact = false): string {
   if (item.image) {
     return `<div class="kh-item-art${compact ? " is-compact" : ""}">
       <img src="${escapeHtml(item.image)}" alt="" draggable="false" />
+    </div>`;
+  }
+  const externalArt = WORLD_FURNITURE_ASSETS.find(
+    ({ key }) => key === `koh:decor:${item.id}`,
+  );
+  if (externalArt) {
+    return `<div class="kh-item-art${compact ? " is-compact" : ""}">
+      <img src="${escapeHtml(externalArt.path)}" alt="" draggable="false" />
     </div>`;
   }
 

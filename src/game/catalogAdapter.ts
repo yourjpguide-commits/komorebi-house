@@ -12,9 +12,6 @@ const DATA_TO_SCENE_LOCATION: Readonly<Record<string, LocationId | undefined>> =
 };
 
 const FALLBACK_ART_ALIASES: Readonly<Record<string, string>> = {
-  'patchwork-zabuton': 'zabuton',
-  'round-chabudai': 'kotatsu',
-  'folded-futon': 'futon',
   'hinoki-writing-desk': 'low-desk',
   'indigo-tansu': 'bookshelf',
   'low-manga-shelf': 'bookshelf',

@@ -428,87 +428,6 @@ function addBicycle(
   return bicycle;
 }
 
-function renderRoom(scene: Phaser.Scene, blueprint: LocationBlueprint): LocationRenderResult {
-  const displayObjects: Phaser.GameObjects.GameObject[] = [];
-  const lightObjects: Phaser.GameObjects.GameObject[] = [];
-  const ground = graphics(scene, DEPTH.ground);
-  displayObjects.push(ground);
-  rect(ground, blueprint.skyColor, 0, 0, blueprint.bounds.width, blueprint.bounds.height);
-
-  // House drop shadow and outer timber frame.
-  rect(ground, 0x42615a, 73, 49, 494, 284);
-  outlinedRect(ground, 0x9a7659, PALETTE.ink, 82, 54, 476, 270, 4);
-  rect(ground, 0xd8c9a3, 88, 60, 464, 51);
-  rect(ground, 0xb78b66, 88, 103, 464, 8);
-  drawTatami(ground, { x: 118, y: 110, width: 404, height: 184 });
-  rect(ground, 0x8b6148, 118, 294, 404, 19);
-  for (let x = 120; x < 520; x += 16) rect(ground, x % 32 ? 0xa17450 : 0x8b6148, x, 296, 14, 15);
-
-  // Tokonoma, windows and tiny kitchen alcove.
-  outlinedRect(ground, 0x60746d, PALETTE.ink, 128, 70, 70, 40, 2);
-  rect(ground, 0xe8d9b6, 132, 74, 62, 32);
-  rect(ground, 0xa85e50, 144, 78, 4, 23);
-  rect(ground, 0x5f7867, 151, 84, 21, 2);
-  rect(ground, 0x6d5542, 168, 88, 10, 15);
-  drawShoji(ground, 364, 64, 132, 46);
-  outlinedRect(ground, 0x7b674f, PALETTE.ink, 504, 70, 40, 40, 2);
-  rect(ground, 0x96a17f, 508, 74, 32, 5);
-  rect(ground, 0xd2bf8d, 508, 82, 32, 24);
-  rect(ground, 0x667c6a, 511, 88, 11, 12);
-
-  // Doors remain visually obvious without looking like UI portals.
-  drawShoji(ground, 136, 277, 68, 37, 0xcbd9c2);
-  drawShoji(ground, 446, 277, 68, 37, 0xb6d8c3);
-  rect(ground, 0xa6664e, 132, 313, 76, 3);
-  rect(ground, 0x6a9277, 442, 313, 76, 3);
-
-  // Static shelf backing for the reading interaction.
-  outlinedRect(ground, 0x76513d, PALETTE.ink, 164, 116, 42, 48, 2);
-  for (let shelfY = 126; shelfY <= 151; shelfY += 12) {
-    rect(ground, 0xa8764d, 168, shelfY, 34, 3);
-    for (let bookX = 169; bookX < 199; bookX += 5) {
-      const bookColors = [0xa95e56, 0x5e7d82, 0xd19d59, 0x71865e] as const;
-      rect(ground, bookColors[bookX % bookColors.length]!, bookX, shelfY - 8, 4, 8);
-    }
-  }
-
-  // Warm pools of light are additive-looking translucent pixel blocks.
-  const sunlight = graphics(scene, DEPTH.groundDetail);
-  sunlight.fillStyle(0xffe1a2, 0.1);
-  sunlight.fillTriangle(369, 109, 494, 109, 472, 258);
-  rect(sunlight, 0xffefbd, 410, 142, 58, 7, 0.08);
-  rect(sunlight, 0xffefbd, 404, 174, 66, 5, 0.06);
-  displayObjects.push(sunlight);
-  lightObjects.push(sunlight);
-
-  // A tiny standing record cabinet visually anchors its interaction.
-  const record = graphics(scene, DEPTH.worldObject + 178);
-  outlinedRect(record, 0x76513d, PALETTE.ink, 438, 150, 32, 30, 2);
-  pixelEllipse(record, 0x2e4546, 454, 161, 18, 18);
-  pixelEllipse(record, 0x566969, 454, 161, 10, 10);
-  rect(record, 0xd39b67, 465, 151, 2, 18);
-  displayObjects.push(record);
-
-  // Tokonoma still life, pendant and close foreground foliage give the room a
-  // composed focal triangle instead of an empty furnishing grid.
-  const alcoveStillLife = graphics(scene, DEPTH.worldObject + 158);
-  rect(alcoveStillLife, 0x4e5f59, 145, 121, 3, 34);
-  rect(alcoveStillLife, 0xd9c99f, 148, 123, 29, 24);
-  rect(alcoveStillLife, 0x526e62, 157, 128, 3, 16);
-  rect(alcoveStillLife, 0xb76b58, 153, 138, 12, 11);
-  pixelEllipse(alcoveStillLife, 0xd5a071, 159, 137, 13, 7);
-  rect(alcoveStillLife, 0x4b6b55, 169, 130, 2, 13);
-  pixelEllipse(alcoveStillLife, 0x8da06b, 173, 128, 10, 6);
-  displayObjects.push(
-    alcoveStillLife,
-    addPendantLamp(scene, 334, 155, 0xb66a4e),
-    addForegroundPlant(scene, 104, 336, false, 0.82),
-    addForegroundPlant(scene, 538, 336, true, 0.86),
-  );
-
-  return { displayObjects, lightObjects };
-}
-
 function renderGarden(scene: Phaser.Scene, blueprint: LocationBlueprint): LocationRenderResult {
   const displayObjects: Phaser.GameObjects.GameObject[] = [];
   const ground = graphics(scene, DEPTH.ground);
@@ -920,7 +839,7 @@ export function renderLocationEnvironment(
 
   switch (blueprint.id) {
     case 'room':
-      return renderRoom(scene, blueprint);
+      throw new Error('Required authored room backplate is missing: koh:world:room');
     case 'garden':
       return renderGarden(scene, blueprint);
     case 'cafe':

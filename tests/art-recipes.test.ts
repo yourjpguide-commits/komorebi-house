@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { ITEM_CATALOG } from "../src/data/catalog";
 import {
   AVATAR_FRAME_COUNTS,
+  EXTERNAL_FURNITURE_IDS,
   FURNITURE_ANIMATION_MANIFEST,
   FURNITURE_IDS,
   FURNITURE_SPECS,
   MATERIAL_KINDS,
   PALETTE,
+  PROCEDURAL_FURNITURE_IDS,
   VIRTUAL_HEIGHT,
   VIRTUAL_WIDTH,
   avatarTextureKey,
@@ -148,9 +150,19 @@ describe("catalog furniture render closure", () => {
     const catalogIds = ITEM_CATALOG.map((item) => item.id).sort();
     expect([...FURNITURE_IDS].sort()).toEqual(catalogIds);
     expect(FURNITURE_IDS).toHaveLength(60);
+    expect(EXTERNAL_FURNITURE_IDS).toHaveLength(5);
+    expect(PROCEDURAL_FURNITURE_IDS).toHaveLength(55);
+    expect(new Set([...EXTERNAL_FURNITURE_IDS, ...PROCEDURAL_FURNITURE_IDS])).toEqual(
+      new Set(FURNITURE_IDS),
+    );
+
+    for (const externalId of EXTERNAL_FURNITURE_IDS) {
+      expect(() => createFurnitureSprite(externalId)).toThrow(/external furniture asset/);
+    }
 
     const signatures = new Set<string>();
     for (const item of ITEM_CATALOG) {
+      if ((EXTERNAL_FURNITURE_IDS as readonly string[]).includes(item.id)) continue;
       const art = createFurnitureSprite(item.id, {
         palette: item.visual.palette,
         seed: "catalog-proof",
@@ -164,7 +176,7 @@ describe("catalog furniture render closure", () => {
       expect(furnitureTextureKey(item.id)).toBe(`koh:decor:${item.id}`);
       signatures.add(pixelArtSignature(art));
     }
-    expect(signatures.size).toBe(FURNITURE_IDS.length);
+    expect(signatures.size).toBe(PROCEDURAL_FURNITURE_IDS.length);
   });
 
   it("declares an explicit valid static fallback for every catalog animation", () => {
@@ -239,13 +251,13 @@ describe("renderer-neutral texture registration", () => {
       { textures: manager },
       {
         locations: ["room"],
-        itemIds: ["patchwork-zabuton", "round-chabudai"],
+        itemIds: ["hinoki-writing-desk", "indigo-tansu"],
         avatarActions: ["idle"],
       },
     );
     expect(result.created).toBe(11); // 1 environment + 4x2 avatar cels + 2 items
     expect(textureKeys).toContain(environmentTextureKey("room"));
-    expect(textureKeys).toContain("koh:decor:patchwork-zabuton");
+    expect(textureKeys).toContain("koh:decor:hinoki-writing-desk");
     expect(textureKeys).toContain(avatarTextureKey("south", "idle", 0));
     expect(textureSizes.get(avatarTextureKey("south", "idle", 0))).toEqual([
       36,
