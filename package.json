@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "art:validate": "node scripts/validate-art-pipeline.mjs",
     "check": "npm run test && npm run build"
   },
   "dependencies": {

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://komorebi.house/contracts/asset-manifest.schema.json",
+  "title": "Komorebi House V2 slice manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sliceId", "runtime", "references", "assets", "acceptance"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "sliceId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "canvas", "worldTile", "placementGrid", "geometrySourceCommit"],
+      "properties": {
+        "engine": { "const": "phaser-3.90.0" },
+        "canvas": { "const": [480, 270] },
+        "worldTile": { "const": [16, 16] },
+        "placementGrid": { "const": [8, 8] },
+        "geometrySourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "sha256", "role"],
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "role": { "enum": ["night-primary", "day-derived"] }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "family", "kind", "state", "proof"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "family": { "type": "string" },
+          "kind": { "enum": ["architecture", "environment", "furniture", "character", "occluder"] },
+          "state": { "enum": ["brief", "candidate", "normalized", "metadata-bound", "runtime-approved", "shipped"] },
+          "proof": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["isolated", "anchor", "footprint", "runtimeCapture"],
+            "properties": {
+              "isolated": { "type": "boolean" },
+              "anchor": { "type": "boolean" },
+              "footprint": { "type": "boolean" },
+              "runtimeCapture": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coldBoot", "placement", "occlusion", "saveReload", "mobileTouch", "nightDay", "visualReview"],
+      "properties": {
+        "coldBoot": { "type": "boolean" },
+        "placement": { "type": "boolean" },
+        "occlusion": { "type": "boolean" },
+        "saveReload": { "type": "boolean" },
+        "mobileTouch": { "type": "boolean" },
+        "nightDay": { "type": "boolean" },
+        "visualReview": { "type": "boolean" }
+      }
+    }
+  }
+}

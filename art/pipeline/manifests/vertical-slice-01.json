@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "sliceId": "vertical-slice-01",
+  "runtime": {
+    "engine": "phaser-3.90.0",
+    "canvas": [480, 270],
+    "worldTile": [16, 16],
+    "placementGrid": [8, 8],
+    "geometrySourceCommit": "05a55d847c66e095607f00f61e49271a034dd8a6"
+  },
+  "references": [
+    {
+      "id": "citypop-night-primary",
+      "path": "art/references/citypop-night-primary.png",
+      "sha256": "10e3d6d0640f1aea8ba20c24bb7e640169f547d7bfcb60347fb1453cb2b0389f",
+      "role": "night-primary"
+    },
+    {
+      "id": "citypop-day-derived",
+      "path": "art/references/citypop-day-derived.png",
+      "sha256": "4a6ea0d7be7695734f0112a91f597740daf9f33a94c89d7a84a602e1c080e842",
+      "role": "day-derived"
+    }
+  ],
+  "assets": [
+    { "id": "room-shell", "family": "room-architecture", "kind": "architecture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "shoji-window", "family": "room-architecture", "kind": "architecture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "engawa", "family": "room-architecture", "kind": "architecture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "visible-garden", "family": "garden-environment", "kind": "environment", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "study-desk", "family": "study-furniture", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "floor-chair", "family": "seating", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "bookshelf", "family": "storage", "kind": "occluder", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "desk-lamp", "family": "lighting", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "potted-plant", "family": "plants", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "low-table", "family": "tables", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "storage-cabinet", "family": "storage", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
+    { "id": "player-character", "family": "characters", "kind": "character", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } }
+  ],
+  "acceptance": {
+    "coldBoot": false,
+    "placement": false,
+    "occlusion": false,
+    "saveReload": false,
+    "mobileTouch": false,
+    "nightDay": false,
+    "visualReview": false
+  }
+}
