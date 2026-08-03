@@ -297,7 +297,6 @@ const FURNITURE_ITEMS = [
       ["oak", "quilted-cotton", "heater-mesh"],
       ["wide-shadow", "quilt-skirt", "table-frame", "tabletop", "quilt-pattern"],
       "furniture-low",
-      { animation: "subtle-heat-shimmer" },
     ),
     interactions: [
       interaction("warm-up", "こたつに入る", "Get cozy", "sit", {

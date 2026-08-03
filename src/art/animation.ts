@@ -16,7 +16,6 @@ export interface FurnitureAnimationRecipe {
 }
 
 const recipes = [
-  ["subtle-heat-shimmer", 4, 4, true, "air"],
   ["single-tick", 2, 1, false, "object"],
   ["pilot-light-pulse", 4, 3, true, "light"],
   ["warm-light-breathe", 4, 2, true, "light"],
