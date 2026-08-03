@@ -19,7 +19,9 @@ import type {
   AudioSystemOptions,
   AudioVolumes,
   FootstepSurface,
+  FootstepCue,
   GameAudioEvent,
+  PlacementCue,
   SoundEffect,
 } from "./types";
 
@@ -79,6 +81,9 @@ export class KomorebiAudioSystem implements AudioSystem {
   private ambience: ProceduralAmbience | null = null;
   private sfx: ProceduralSfx | null = null;
   private unlockPromise: Promise<boolean> | null = null;
+  private lifecycleGeneration = 0;
+  private suspendReason: "manual" | "visibility" | null = null;
+  private visibilityEpoch = 0;
   private readonly unbinders = new Set<() => void>();
 
   constructor(options: AudioSystemOptions = {}) {
@@ -112,6 +117,7 @@ export class KomorebiAudioSystem implements AudioSystem {
       scene: this.scene,
       ambience: { ...this.ambienceOptions },
       studyActive: this.studyActive,
+      visibilityPaused: this.suspendReason === "visibility",
     };
   }
 
@@ -124,40 +130,78 @@ export class KomorebiAudioSystem implements AudioSystem {
     if (!this.supported || this.status === "disposed") {
       return Promise.resolve(false);
     }
+    if (this.status === "running" && this.context?.state === "running") {
+      return Promise.resolve(true);
+    }
     if (this.unlockPromise) return this.unlockPromise;
 
-    this.unlockPromise = this.performUnlock().finally(() => {
-      this.unlockPromise = null;
+    const generation = this.lifecycleGeneration;
+    const pending = this.performUnlock(generation).finally(() => {
+      if (this.unlockPromise === pending) this.unlockPromise = null;
     });
-    return this.unlockPromise;
+    this.unlockPromise = pending;
+    return pending;
   }
 
   bindUserGesture(target: EventTarget | undefined = defaultEventTarget()): () => void {
-    if (!target || this.status === "disposed") return () => undefined;
+    this.reviveForBinding();
+    if (!target || !this.supported || this.status === "disposed") {
+      return () => undefined;
+    }
     let active = true;
+
+    const visibilityTarget = defaultVisibilityTarget();
 
     const cleanup = () => {
       if (!active) return;
       active = false;
-      target.removeEventListener("pointerdown", unlockFromGesture);
-      target.removeEventListener("keydown", unlockFromGesture);
+      target.removeEventListener("pointerdown", recoverFromGesture);
+      target.removeEventListener("keydown", recoverFromGesture);
+      visibilityTarget?.removeEventListener(
+        "visibilitychange",
+        onVisibilityChange,
+      );
+      target.removeEventListener("pagehide", onPageHide);
+      target.removeEventListener("pageshow", onPageShow);
       this.unbinders.delete(cleanup);
     };
-    const unlockFromGesture = () => {
-      cleanup();
+
+    // Keep this tiny listener for the binding lifetime. It makes rejected
+    // first gestures and browser interruptions retryable without allocating a
+    // second AudioContext or asking scene code to manage recovery.
+    const recoverFromGesture = () => {
+      if (
+        this.status !== "locked" &&
+        this.status !== "suspended" &&
+        this.status !== "unavailable"
+      ) {
+        return;
+      }
+      if (this.suspendReason === "manual") return;
       void this.unlock();
     };
 
-    target.addEventListener("pointerdown", unlockFromGesture, {
-      once: true,
-      passive: true,
-    });
-    target.addEventListener("keydown", unlockFromGesture, { once: true });
+    const onVisibilityChange = () => {
+      if (visibilityTarget?.visibilityState === "hidden") {
+        void this.suspendForVisibility();
+      } else {
+        this.resumeFromVisibility();
+      }
+    };
+    const onPageHide = () => void this.suspendForVisibility();
+    const onPageShow = () => this.resumeFromVisibility();
+
+    target.addEventListener("pointerdown", recoverFromGesture, { passive: true });
+    target.addEventListener("keydown", recoverFromGesture);
+    visibilityTarget?.addEventListener("visibilitychange", onVisibilityChange);
+    target.addEventListener("pagehide", onPageHide);
+    target.addEventListener("pageshow", onPageShow);
     this.unbinders.add(cleanup);
     return cleanup;
   }
 
   bindGameEvents(target: EventTarget | undefined = defaultEventTarget()): () => void {
+    this.reviveForBinding();
     if (!target || this.status === "disposed") return () => undefined;
     let active = true;
     const onAudioEvent: EventListener = (event) => {
@@ -179,13 +223,13 @@ export class KomorebiAudioSystem implements AudioSystem {
   handleGameEvent(event: GameAudioEvent): void {
     switch (event.type) {
       case "footstep":
-        this.playSfx(`footstep-${event.surface ?? "tatami"}`);
+        this.playFootstep(event);
         break;
       case "interact":
         this.playSfx("interact");
         break;
       case "place":
-        this.playSfx(event.valid === false ? "place-invalid" : "place-drop");
+        this.playPlacementCue(event);
         break;
       case "rotate":
         this.playSfx("rotate");
@@ -212,6 +256,7 @@ export class KomorebiAudioSystem implements AudioSystem {
     this.scene = scene;
     this.ambienceOptions = nextOptions;
     if (changed) {
+      this.music?.setScene?.(this.scene);
       this.ambience?.set(this.scene, this.ambienceOptions);
       this.emit();
     }
@@ -227,6 +272,32 @@ export class KomorebiAudioSystem implements AudioSystem {
     this.music?.setStudyActive(active);
     if (active) this.sfx?.play("study-start");
     this.emit();
+  }
+
+  playFootstep(cue: FootstepCue = {}): void {
+    if (
+      this.status === "disposed" ||
+      this.muted
+    ) {
+      return;
+    }
+    this.sfx?.playFootstep(cue.surface ?? "tatami", {
+      intensity: cue.intensity,
+      pan: cue.pan,
+    });
+  }
+
+  playPlacementCue(cue: PlacementCue = {}): void {
+    const phase = cue.phase ?? "drop";
+    if (this.status === "disposed" || this.muted) {
+      return;
+    }
+    this.sfx?.playPlacement({
+      phase,
+      valid: cue.valid,
+      weight: cue.weight ?? "medium",
+      pan: cue.pan,
+    });
   }
 
   playSfx(effect: SoundEffect): void {
@@ -259,15 +330,19 @@ export class KomorebiAudioSystem implements AudioSystem {
 
   async suspend(): Promise<void> {
     if (!this.context || this.status === "disposed") return;
+    this.suspendReason = "manual";
+    this.visibilityEpoch += 1;
     try {
       await this.context.suspend();
       this.syncContextState();
     } catch {
+      if (this.context.state === "running") this.suspendReason = null;
       // Suspending audio is an optimization; failure is harmless.
     }
   }
 
   resume(): Promise<boolean> {
+    if (this.suspendReason === "manual") this.suspendReason = null;
     return this.unlock();
   }
 
@@ -276,12 +351,16 @@ export class KomorebiAudioSystem implements AudioSystem {
 
     for (const unbind of [...this.unbinders]) unbind();
     this.unbinders.clear();
-    this.music?.dispose(0.08);
-    this.ambience?.dispose();
-    this.sfx?.dispose(0.14);
+    this.music?.dispose(0);
+    this.ambience?.dispose(0);
+    this.sfx?.dispose(0);
     this.music = null;
     this.ambience = null;
     this.sfx = null;
+    this.suspendReason = null;
+    this.lifecycleGeneration += 1;
+    this.visibilityEpoch += 1;
+    this.unlockPromise = null;
 
     const context = this.context;
     if (context) {
@@ -300,19 +379,6 @@ export class KomorebiAudioSystem implements AudioSystem {
       this.reverbFilter,
       this.reverbReturn,
     ];
-    const fadeSeconds = 0.14;
-    if (this.masterGain && context && context.state !== "closed") {
-      const now = context.currentTime;
-      this.masterGain.gain.cancelScheduledValues(now);
-      this.masterGain.gain.setValueAtTime(
-        Math.max(0.0001, this.masterGain.gain.value),
-        now,
-      );
-      this.masterGain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + fadeSeconds,
-      );
-    }
     this.musicGain = null;
     this.ambienceGain = null;
     this.sfxGain = null;
@@ -328,16 +394,13 @@ export class KomorebiAudioSystem implements AudioSystem {
     this.status = "disposed";
     this.emit();
     this.listeners.clear();
-
-    setTimeout(() => {
-      for (const node of nodes) safeDisconnect(node);
-      if (context && context.state !== "closed") {
-        void context.close().catch(() => undefined);
-      }
-    }, Math.ceil((fadeSeconds + 0.04) * 1_000));
+    for (const node of nodes) safeDisconnect(node);
+    if (context && context.state !== "closed") {
+      void context.close().catch(() => undefined);
+    }
   }
 
-  private async performUnlock(): Promise<boolean> {
+  private async performUnlock(generation: number): Promise<boolean> {
     this.status = "starting";
     this.emit();
 
@@ -351,11 +414,34 @@ export class KomorebiAudioSystem implements AudioSystem {
       }
 
       if (context.state !== "running") await context.resume();
+      if (
+        generation !== this.lifecycleGeneration ||
+        this.context !== context
+      ) {
+        return false;
+      }
+      if (
+        this.suspendReason !== null ||
+        defaultVisibilityTarget()?.visibilityState === "hidden"
+      ) {
+        if (this.suspendReason !== "manual") {
+          this.suspendReason = "visibility";
+        }
+        if (context.state === "running") {
+          await context.suspend().catch(() => undefined);
+        }
+        this.syncContextState();
+        return false;
+      }
       this.warmUpOutput(context);
       this.startGenerators();
+      this.suspendReason = null;
       this.syncContextState();
       return context.state === "running";
     } catch {
+      if (generation !== this.lifecycleGeneration) {
+        return false;
+      }
       // A resume can be rejected when unlock was not called directly inside a
       // user gesture. Keep the system retryable instead of breaking the game.
       this.status =
@@ -450,6 +536,7 @@ export class KomorebiAudioSystem implements AudioSystem {
 
     if (!this.music) {
       this.music = new GenerativeMusic(context, this.musicGain);
+      this.music.setScene?.(this.scene, 0);
       this.music.setStudyActive(this.studyActive);
       this.music.start();
     }
@@ -497,8 +584,76 @@ export class KomorebiAudioSystem implements AudioSystem {
   }
 
   private readonly onContextStateChange = (): void => {
+    if (
+      this.context?.state === "running" &&
+      (this.suspendReason !== null ||
+        defaultVisibilityTarget()?.visibilityState === "hidden")
+    ) {
+      if (this.suspendReason !== "manual") {
+        this.suspendReason = "visibility";
+      }
+      this.status = "suspended";
+      this.emit();
+      void this.context.suspend().catch(() => undefined);
+      return;
+    }
     this.syncContextState();
   };
+
+  private async suspendForVisibility(): Promise<void> {
+    const context = this.context;
+    if (
+      !context ||
+      this.status === "disposed" ||
+      this.suspendReason === "manual"
+    ) {
+      return;
+    }
+
+    const epoch = ++this.visibilityEpoch;
+    this.suspendReason = "visibility";
+    this.emit();
+    if (context.state !== "running") {
+      this.syncContextState();
+      return;
+    }
+    try {
+      await context.suspend();
+      this.syncContextState();
+    } catch {
+      if (this.suspendReason === "visibility") this.suspendReason = null;
+      return;
+    }
+
+    // A fast tab switch can become visible before suspend() settles.
+    if (
+      epoch === this.visibilityEpoch &&
+      defaultVisibilityTarget()?.visibilityState !== "hidden"
+    ) {
+      this.resumeFromVisibility();
+    }
+  }
+
+  private resumeFromVisibility(): void {
+    if (
+      this.status === "disposed" ||
+      this.suspendReason !== "visibility" ||
+      defaultVisibilityTarget()?.visibilityState === "hidden"
+    ) {
+      return;
+    }
+    this.visibilityEpoch += 1;
+    this.suspendReason = null;
+    // Most browsers allow resuming a previously unlocked context here. If a
+    // browser insists on a new gesture, the persistent gesture binding retries.
+    void this.unlock();
+  }
+
+  private reviveForBinding(): void {
+    if (this.status !== "disposed") return;
+    this.status = this.supported ? "locked" : "unavailable";
+    this.suspendReason = null;
+  }
 
   private syncContextState(): void {
     if (this.status === "disposed" || !this.context) return;
@@ -566,6 +721,10 @@ function defaultEventTarget(): EventTarget | undefined {
   return typeof window === "undefined" ? undefined : window;
 }
 
+function defaultVisibilityTarget(): Document | undefined {
+  return typeof document === "undefined" ? undefined : document;
+}
+
 function volumeCurve(value: number): number {
   const normalized = clamp01(value);
   return normalized * normalized;
@@ -598,6 +757,10 @@ function isGameAudioEvent(value: unknown): value is GameAudioEvent {
     surface?: unknown;
     valid?: unknown;
     action?: unknown;
+    phase?: unknown;
+    weight?: unknown;
+    intensity?: unknown;
+    pan?: unknown;
   };
 
   switch (candidate.type) {
@@ -605,7 +768,9 @@ function isGameAudioEvent(value: unknown): value is GameAudioEvent {
       return (
         candidate.surface === undefined ||
         isFootstepSurface(candidate.surface)
-      );
+      ) &&
+        isOptionalFiniteNumber(candidate.intensity) &&
+        isOptionalFiniteNumber(candidate.pan);
     case "interact":
     case "rotate":
     case "travel":
@@ -613,7 +778,15 @@ function isGameAudioEvent(value: unknown): value is GameAudioEvent {
     case "place":
       return (
         candidate.valid === undefined || typeof candidate.valid === "boolean"
-      );
+      ) &&
+        (candidate.phase === undefined ||
+          candidate.phase === "pickup" ||
+          candidate.phase === "drop") &&
+        (candidate.weight === undefined ||
+          candidate.weight === "light" ||
+          candidate.weight === "medium" ||
+          candidate.weight === "heavy") &&
+        isOptionalFiniteNumber(candidate.pan);
     case "ui":
       return (
         candidate.action === undefined ||
@@ -633,4 +806,8 @@ function isFootstepSurface(value: unknown): value is FootstepSurface {
     value === "stone" ||
     value === "grass"
   );
+}
+
+function isOptionalFiniteNumber(value: unknown): boolean {
+  return value === undefined || (typeof value === "number" && Number.isFinite(value));
 }

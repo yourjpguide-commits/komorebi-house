@@ -24,6 +24,7 @@ export class ProceduralAmbience {
   private readonly context: AudioContext;
   private readonly destination: AudioNode;
   private layer: AmbienceLayer | null = null;
+  private layerKey: string | null = null;
   private disposed = false;
 
   constructor(context: AudioContext, destination: AudioNode) {
@@ -33,6 +34,8 @@ export class ProceduralAmbience {
 
   set(scene: AudioScene, options: AmbienceOptions): void {
     if (this.disposed) return;
+    const nextKey = `${scene}:${options.rain ? "rain" : "dry"}:${options.timeOfDay}`;
+    if (nextKey === this.layerKey) return;
     const next = new AmbienceLayer(
       this.context,
       this.destination,
@@ -42,14 +45,16 @@ export class ProceduralAmbience {
     next.start();
     const previous = this.layer;
     this.layer = next;
+    this.layerKey = nextKey;
     previous?.dispose(CROSSFADE_SECONDS);
   }
 
-  dispose(): void {
+  dispose(fadeSeconds = 0.15): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.layer?.dispose(0.15);
+    this.layer?.dispose(fadeSeconds);
     this.layer = null;
+    this.layerKey = null;
   }
 }
 
@@ -130,6 +135,11 @@ class AmbienceLayer {
     for (const timer of this.timers) clearTimeout(timer);
     this.timers.clear();
 
+    if (fadeSeconds <= 0) {
+      this.cleanup();
+      return;
+    }
+
     const now = this.context.currentTime;
     const currentLevel = Math.max(0, this.output.gain.value);
     this.output.gain.cancelScheduledValues(now);
@@ -140,12 +150,16 @@ class AmbienceLayer {
     );
 
     const cleanupTimer = setTimeout(() => {
-      for (const source of this.sources) safeStop(source);
-      this.sources.clear();
-      for (const node of this.nodes) safeDisconnect(node);
-      this.nodes.clear();
+      this.cleanup();
     }, Math.ceil((fadeSeconds + 0.08) * 1_000));
     this.timers.add(cleanupTimer);
+  }
+
+  private cleanup(): void {
+    for (const source of this.sources) safeStop(source);
+    this.sources.clear();
+    for (const node of this.nodes) safeDisconnect(node);
+    this.nodes.clear();
   }
 
   private startRoom(): void {

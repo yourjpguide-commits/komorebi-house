@@ -9,11 +9,23 @@ import {
   safeStop,
   type RandomSource,
 } from "./primitives";
+import type { AudioScene } from "./types";
 
 const TEMPO = 72;
 const EIGHTH_NOTE_SECONDS = 60 / TEMPO / 2;
 const SCHEDULE_AHEAD_SECONDS = 0.22;
 const SCHEDULER_INTERVAL_MS = 32;
+const LOCATION_TRANSITION_SECONDS = 1.35;
+
+const LOCATION_MIX: Record<
+  AudioScene,
+  { gain: number; cutoff: number; flutter: number }
+> = {
+  room: { gain: 0.84, cutoff: 4_200, flutter: 0.00042 },
+  garden: { gain: 0.73, cutoff: 4_900, flutter: 0.00024 },
+  cafe: { gain: 0.81, cutoff: 3_550, flutter: 0.00054 },
+  park: { gain: 0.7, cutoff: 5_200, flutter: 0.0002 },
+};
 
 interface Chord {
   bass: number;
@@ -51,6 +63,7 @@ export class GenerativeMusic {
   private flutterDepth: GainNode | null = null;
   private nextStepAt = 0;
   private step = 0;
+  private scene: AudioScene = "room";
   private studyActive = false;
   private disposed = false;
 
@@ -101,11 +114,66 @@ export class GenerativeMusic {
 
   setStudyActive(active: boolean): void {
     this.studyActive = active;
+    this.applyLocationMix(0.6);
+  }
+
+  /**
+   * Morph the single original music bed to the current place. Keeping one
+   * scheduler avoids doubled notes during travel while ambience performs the
+   * audible equal-power crossfade around it.
+   */
+  setScene(
+    scene: AudioScene,
+    transitionSeconds = LOCATION_TRANSITION_SECONDS,
+  ): void {
+    if (this.disposed || scene === this.scene) return;
+    this.scene = scene;
+    this.applyLocationMix(transitionSeconds);
+  }
+
+  private applyLocationMix(transitionSeconds: number): void {
+    if (this.disposed) return;
     const now = this.context.currentTime;
+    const seconds = Math.max(0, transitionSeconds);
+    const profile = LOCATION_MIX[this.scene];
+    const focusScale = this.studyActive ? 0.86 : 1;
+
     this.output.gain.cancelScheduledValues(now);
     this.output.gain.setValueAtTime(this.output.gain.value, now);
-    // Focus mode stays musical, but sits a little farther behind the room.
-    this.output.gain.linearRampToValueAtTime(active ? 0.72 : 0.84, now + 0.6);
+    this.toneFilter.frequency.cancelScheduledValues(now);
+    this.toneFilter.frequency.setValueAtTime(
+      Math.max(20, this.toneFilter.frequency.value),
+      now,
+    );
+    if (seconds === 0) {
+      this.output.gain.setValueAtTime(profile.gain * focusScale, now);
+      this.toneFilter.frequency.setValueAtTime(profile.cutoff, now);
+    } else {
+      this.output.gain.linearRampToValueAtTime(
+        profile.gain * focusScale,
+        now + seconds,
+      );
+      this.toneFilter.frequency.exponentialRampToValueAtTime(
+        profile.cutoff,
+        now + seconds,
+      );
+    }
+
+    if (this.flutterDepth) {
+      this.flutterDepth.gain.cancelScheduledValues(now);
+      this.flutterDepth.gain.setValueAtTime(
+        Math.max(0.00001, this.flutterDepth.gain.value),
+        now,
+      );
+      if (seconds === 0) {
+        this.flutterDepth.gain.setValueAtTime(profile.flutter, now);
+      } else {
+        this.flutterDepth.gain.exponentialRampToValueAtTime(
+          profile.flutter,
+          now + seconds,
+        );
+      }
+    }
   }
 
   dispose(fadeSeconds = 0.18): void {
@@ -119,17 +187,22 @@ export class GenerativeMusic {
 
     const now = this.context.currentTime;
     this.output.gain.cancelScheduledValues(now);
-    this.output.gain.setValueAtTime(this.output.gain.value, now);
-    this.output.gain.linearRampToValueAtTime(0.0001, now + fadeSeconds);
+    if (fadeSeconds <= 0) {
+      this.output.gain.setValueAtTime(0.0001, now);
+    } else {
+      this.output.gain.setValueAtTime(this.output.gain.value, now);
+      this.output.gain.linearRampToValueAtTime(0.0001, now + fadeSeconds);
+    }
 
+    const stopAt = now + Math.max(0, fadeSeconds);
     for (const source of this.sources) {
-      safeStop(source, now + fadeSeconds + 0.02);
+      safeStop(source, stopAt);
     }
     this.sources.clear();
-    safeStop(this.bedSource, now + fadeSeconds + 0.02);
-    safeStop(this.flutterSource, now + fadeSeconds + 0.02);
+    safeStop(this.bedSource, stopAt);
+    safeStop(this.flutterSource, stopAt);
 
-    setTimeout(() => {
+    const cleanup = () => {
       safeDisconnect(this.bedSource);
       safeDisconnect(this.flutterSource);
       safeDisconnect(this.flutterDepth);
@@ -139,7 +212,9 @@ export class GenerativeMusic {
       this.bedSource = null;
       this.flutterSource = null;
       this.flutterDepth = null;
-    }, Math.ceil((fadeSeconds + 0.1) * 1_000));
+    };
+    if (fadeSeconds <= 0) cleanup();
+    else setTimeout(cleanup, Math.ceil((fadeSeconds + 0.1) * 1_000));
   }
 
   private schedule(): void {
@@ -229,7 +304,7 @@ export class GenerativeMusic {
     const depth = this.context.createGain();
     flutter.type = "sine";
     flutter.frequency.value = 0.23;
-    depth.gain.value = 0.00042;
+    depth.gain.value = LOCATION_MIX[this.scene].flutter;
     flutter.connect(depth);
     // Modulating a short delay creates real, subtle pitch drift (tape wow)
     // without detuning every scheduled oscillator independently.

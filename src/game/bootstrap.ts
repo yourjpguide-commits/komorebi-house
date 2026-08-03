@@ -339,7 +339,9 @@ export function bootstrapGame(root: HTMLElement): GameBootstrapHandle {
     if (destroyed || game) return;
     if (starting) return starting;
     starting = (async () => {
-      await audio.unlock();
+      // Start WebAudio inside the click gesture, but never make the visual
+      // world depend on a browser-controlled resume promise settling.
+      void audio.unlock().catch(() => false);
       const initialWorld = systemRuntime.getWorldState();
       const restoredFocus = systemRuntime.getState().study.activeSession;
       ui = createGameUI(uiHost, {
@@ -880,6 +882,7 @@ export function bootstrapGame(root: HTMLElement): GameBootstrapHandle {
       ui = null;
       game?.destroy(true);
       game = null;
+      audio.dispose();
       if (qaGlobals.__KOMOREBI_QA__ === qaBridge) {
         delete qaGlobals.__KOMOREBI_QA__;
       }

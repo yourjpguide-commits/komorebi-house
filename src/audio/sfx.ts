@@ -7,7 +7,12 @@ import {
   safeDisconnect,
   type RandomSource,
 } from "./primitives";
-import type { SoundEffect } from "./types";
+import type {
+  FootstepSurface,
+  PlacementPhase,
+  PlacementWeight,
+  SoundEffect,
+} from "./types";
 
 const THROTTLE_MS: Partial<Record<SoundEffect, number>> = {
   "ui-hover": 45,
@@ -15,8 +20,23 @@ const THROTTLE_MS: Partial<Record<SoundEffect, number>> = {
   "footstep-wood": 105,
   "footstep-stone": 105,
   "footstep-grass": 105,
+  "place-pickup": 90,
+  "place-drop": 110,
+  "place-invalid": 140,
   rotate: 65,
 };
+
+interface PhysicalCueOptions {
+  intensity?: number;
+  pan?: number;
+}
+
+interface PlacementSfxOptions {
+  phase: PlacementPhase;
+  valid?: boolean;
+  weight: PlacementWeight;
+  pan?: number;
+}
 
 interface ToneOptions {
   at?: number;
@@ -54,7 +74,7 @@ export class ProceduralSfx {
     this.noiseBuffer = createNoiseBuffer(context, 1.4, this.random);
   }
 
-  play(effect: SoundEffect): void {
+  play(effect: SoundEffect, cue: PhysicalCueOptions = {}): void {
     if (this.disposed || this.context.state !== "running") return;
     const wallTime = Date.now();
     const throttle = THROTTLE_MS[effect] ?? 0;
@@ -62,6 +82,8 @@ export class ProceduralSfx {
     this.lastPlayed.set(effect, wallTime);
 
     const at = this.context.currentTime + 0.008;
+    const physicalLevel = normalizeIntensity(cue.intensity);
+    const physicalPan = normalizePan(cue.pan);
     switch (effect) {
       case "ui-hover":
         this.tone(880, {
@@ -143,59 +165,66 @@ export class ProceduralSfx {
         this.noise({
           at,
           duration: 0.065,
-          peak: 0.052,
+          peak: 0.052 * physicalLevel,
           filterType: "bandpass",
           frequency: 760,
           q: 0.7,
+          pan: physicalPan,
         });
         this.tone(230, {
           at,
           duration: 0.08,
-          peak: 0.05,
+          peak: 0.05 * physicalLevel,
           type: "triangle",
           toFrequency: 310,
           filterFrequency: 950,
+          pan: physicalPan,
         });
         break;
       case "place-drop":
         this.noise({
           at,
           duration: 0.1,
-          peak: 0.072,
+          peak: 0.072 * physicalLevel,
           filterType: "lowpass",
           frequency: 1_100,
+          pan: physicalPan,
         });
         this.tone(155, {
           at,
           duration: 0.13,
-          peak: 0.072,
+          peak: 0.072 * physicalLevel,
           type: "triangle",
           toFrequency: 92,
           filterFrequency: 620,
+          pan: physicalPan,
         });
         this.tone(312, {
           at: at + 0.012,
           duration: 0.07,
-          peak: 0.022,
+          peak: 0.022 * physicalLevel,
           type: "sine",
+          pan: physicalPan,
         });
         break;
       case "place-invalid":
         this.tone(156, {
           at,
           duration: 0.14,
-          peak: 0.046,
+          peak: 0.046 * physicalLevel,
           type: "square",
           toFrequency: 142,
           filterFrequency: 590,
+          pan: physicalPan,
         });
         this.tone(164, {
           at,
           duration: 0.14,
-          peak: 0.025,
+          peak: 0.025 * physicalLevel,
           type: "sawtooth",
           toFrequency: 150,
           filterFrequency: 520,
+          pan: physicalPan,
         });
         break;
       case "coin":
@@ -260,16 +289,16 @@ export class ProceduralSfx {
         });
         break;
       case "footstep-tatami":
-        this.footstep(at, "tatami");
+        this.footstep(at, "tatami", physicalLevel, physicalPan);
         break;
       case "footstep-wood":
-        this.footstep(at, "wood");
+        this.footstep(at, "wood", physicalLevel, physicalPan);
         break;
       case "footstep-stone":
-        this.footstep(at, "stone");
+        this.footstep(at, "stone", physicalLevel, physicalPan);
         break;
       case "footstep-grass":
-        this.footstep(at, "grass");
+        this.footstep(at, "grass", physicalLevel, physicalPan);
         break;
       case "notification":
         this.tone(midiToHz(78), {
@@ -290,6 +319,31 @@ export class ProceduralSfx {
     }
   }
 
+  playFootstep(
+    surface: FootstepSurface,
+    cue: PhysicalCueOptions = {},
+  ): void {
+    this.play(`footstep-${surface}`, cue);
+  }
+
+  playPlacement(cue: PlacementSfxOptions): void {
+    const weightScale: Record<PlacementWeight, number> = {
+      light: 0.76,
+      medium: 1,
+      heavy: 1.2,
+    };
+    const effect: SoundEffect =
+      cue.valid === false
+        ? "place-invalid"
+        : cue.phase === "pickup"
+          ? "place-pickup"
+          : "place-drop";
+    this.play(effect, {
+      intensity: cue.valid === false ? 0.9 : weightScale[cue.weight],
+      pan: cue.pan,
+    });
+  }
+
   dispose(fadeSeconds = 0): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -308,14 +362,19 @@ export class ProceduralSfx {
 
   private footstep(
     at: number,
-    surface: "tatami" | "wood" | "stone" | "grass",
+    surface: FootstepSurface,
+    level: number,
+    requestedPan: number,
   ): void {
-    const pan = randomBetween(this.random, -0.16, 0.16);
+    const pan = Math.max(
+      -1,
+      Math.min(1, requestedPan + randomBetween(this.random, -0.07, 0.07)),
+    );
     if (surface === "tatami") {
       this.noise({
         at,
         duration: 0.09,
-        peak: 0.042,
+        peak: 0.042 * level,
         filterType: "lowpass",
         frequency: 880,
         q: 0.55,
@@ -324,7 +383,7 @@ export class ProceduralSfx {
       this.tone(115, {
         at,
         duration: 0.075,
-        peak: 0.022,
+        peak: 0.022 * level,
         type: "sine",
         toFrequency: 86,
         pan,
@@ -336,7 +395,7 @@ export class ProceduralSfx {
       this.tone(randomBetween(this.random, 175, 225), {
         at,
         duration: 0.075,
-        peak: 0.054,
+        peak: 0.054 * level,
         type: "triangle",
         toFrequency: 105,
         filterFrequency: 790,
@@ -345,7 +404,7 @@ export class ProceduralSfx {
       this.noise({
         at,
         duration: 0.035,
-        peak: 0.031,
+        peak: 0.031 * level,
         filterType: "bandpass",
         frequency: 1_420,
         q: 1.2,
@@ -358,7 +417,7 @@ export class ProceduralSfx {
       this.noise({
         at,
         duration: 0.072,
-        peak: 0.05,
+        peak: 0.05 * level,
         filterType: "bandpass",
         frequency: 1_950,
         q: 0.75,
@@ -367,7 +426,7 @@ export class ProceduralSfx {
       this.tone(randomBetween(this.random, 310, 390), {
         at,
         duration: 0.048,
-        peak: 0.028,
+        peak: 0.028 * level,
         type: "triangle",
         toFrequency: 220,
         pan,
@@ -379,7 +438,7 @@ export class ProceduralSfx {
       this.noise({
         at: at + index * 0.018,
         duration: 0.06,
-        peak: 0.027 - index * 0.003,
+        peak: (0.027 - index * 0.003) * level,
         filterType: "bandpass",
         frequency: 1_050 + index * 360,
         q: 0.45,
@@ -507,4 +566,14 @@ export class ProceduralSfx {
       { once: true },
     );
   }
+}
+
+function normalizeIntensity(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 1;
+  return Math.max(0.45, Math.min(1.25, value));
+}
+
+function normalizePan(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 0;
+  return Math.max(-1, Math.min(1, value));
 }

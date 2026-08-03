@@ -83,6 +83,8 @@ interface PlacementSession {
 
 interface AmbientMote {
   image: Phaser.GameObjects.Image;
+  x: number;
+  y: number;
   originX: number;
   originY: number;
   velocityX: number;
@@ -90,6 +92,11 @@ interface AmbientMote {
   phase: number;
   kind: LocationBlueprint['ambience'];
 }
+
+const MOVEMENT_EPSILON = 0.05;
+const PHYSICS_STEP_GRACE_MS = 50;
+const WALK_FRAME_DISTANCE = 10;
+const FOOT_CONTACT_FRAMES = new Set([1, 3]);
 
 export interface WorldSceneQaHandle {
   getState(): WorldSnapshot;
@@ -139,10 +146,17 @@ export class WorldScene extends Phaser.Scene {
   private blueprint!: LocationBlueprint;
   private savedState!: SavedWorldState;
   private player!: Phaser.Physics.Arcade.Sprite;
+  private playerVisual!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Image;
   private playerGroundContact!: Phaser.GameObjects.Graphics;
   private playerDirection: Direction = 'down';
   private playerMoving = false;
+  private playerMovementRequested = false;
+  private playerLastPhysicsPosition: Point = { x: 0, y: 0 };
+  private playerWalkDistance = 0;
+  private playerWalkFrame = 0;
+  private playerAnimationStartedAt = 0;
+  private playerLastMovedAt = 0;
   private keys!: KeyBindings;
   private cursorKeys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private touchDirections = new Set<Direction>();
@@ -151,8 +165,9 @@ export class WorldScene extends Phaser.Scene {
   private lastClickDistance = Number.POSITIVE_INFINITY;
   private clickStallAt = 0;
   private transitionActive = false;
+  private explorationWasSuspended = false;
+  private resumeRequiresNeutralInput = false;
   private portalCooldownUntil = 0;
-  private lastFootstepAt = 0;
   private placementSerial = 0;
   private placement: PlacementSession | null = null;
   private nearestInteraction: InteractionDefinition | null = null;
@@ -196,13 +211,32 @@ export class WorldScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (!this.player?.active) return;
 
-    this.handleHotkeys();
+    const explorationSuspended = this.isExplorationInputSuspended();
+    if (explorationSuspended) {
+      this.clearExplorationMotionIntent();
+      this.resumeRequiresNeutralInput = true;
+    } else if (this.explorationWasSuspended) {
+      this.resumeRequiresNeutralInput = this.hasRawKeyboardMovement();
+    }
+    this.explorationWasSuspended = explorationSuspended;
+
+    if (
+      this.resumeRequiresNeutralInput &&
+      !explorationSuspended &&
+      !this.hasRawKeyboardMovement()
+    ) {
+      this.resumeRequiresNeutralInput = false;
+    }
+
+    this.handleHotkeys(explorationSuspended);
 
     if (this.transitionActive) {
-      this.stopPlayer();
+      this.stopPlayer(time);
     } else if (this.placement) {
-      this.stopPlayer();
+      this.stopPlayer(time);
       this.updatePlacementFromPointer();
+    } else if (explorationSuspended || this.resumeRequiresNeutralInput) {
+      this.stopPlayer(time);
     } else {
       this.updatePlayerMovement(time);
       this.updateNearestInteraction();
@@ -309,7 +343,10 @@ export class WorldScene extends Phaser.Scene {
       const spawn =
         this.blueprint.spawns[spawnId ?? this.blueprint.defaultSpawn] ??
         this.blueprint.spawns[this.blueprint.defaultSpawn];
-      if (spawn) this.player.setPosition(spawn.x, spawn.y);
+      if (spawn) {
+        this.player.setPosition(spawn.x, spawn.y);
+        this.stopPlayer();
+      }
       return;
     }
     const authorityResult = systemRuntime.travel(location);
@@ -398,6 +435,7 @@ export class WorldScene extends Phaser.Scene {
           this.publishState(true);
           return;
         }
+        if (this.isWorldUiBlocking()) return;
         this.clickTarget = {
           x: Phaser.Math.Clamp(
             pointer.worldX,
@@ -422,24 +460,24 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
-  private handleHotkeys(): void {
+  private handleHotkeys(explorationSuspended: boolean): void {
     if (Phaser.Input.Keyboard.JustDown(this.keys.cancel)) {
       if (this.placement) this.cancelPlacement();
-      else this.clickTarget = null;
+      else if (!explorationSuspended) this.clickTarget = null;
     }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.rotate)) {
+    if (this.placement && Phaser.Input.Keyboard.JustDown(this.keys.rotate)) {
       this.rotatePlacement();
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys.place)) {
       if (this.placement) this.confirmPlacement();
-      else this.performInteraction();
+      else if (!explorationSuspended) this.performInteraction();
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys.interact)) {
-      this.performInteraction();
+      if (this.placement || !explorationSuspended) this.performInteraction();
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys.decorate)) {
       if (this.placement) this.cancelPlacement();
-      else {
+      else if (!explorationSuspended) {
         const item = this.firstAvailableItem();
         if (item) this.beginPlacement(item);
       }
@@ -515,11 +553,7 @@ export class WorldScene extends Phaser.Scene {
     // sprite field can therefore remain truthy after the display list and its
     // Arcade body have been destroyed (notably in the deterministic QA reset
     // path). Treat that stale reference as absent and build a fresh actor.
-    if (
-      !this.player?.active ||
-      !this.player.body ||
-      !this.playerShadow?.active
-    ) {
+    if (!this.playerShadow?.active) {
       this.playerShadow = this.add
         .image(spawn.x + 2, spawn.y - 1, ART_KEYS.shadow)
         .setOrigin(0.5)
@@ -529,10 +563,22 @@ export class WorldScene extends Phaser.Scene {
       this.playerGroundContact = this.add
         .graphics()
         .setDepth(DEPTH.shadow + spawn.y + 0.05);
+    } else {
+      this.playerShadow
+        .setPosition(spawn.x + 2, spawn.y - 1)
+        .setScale(shadowScale, 0.7)
+        .setAlpha(0.5);
+      if (!this.playerGroundContact?.active) {
+        this.playerGroundContact = this.add.graphics();
+      }
+    }
+
+    if (!this.player?.active || !this.player.body) {
       this.player = this.physics.add
         .sprite(spawn.x, spawn.y, this.avatarKey('down', false, 0))
         .setOrigin(0.5, 1)
-        .setScale(avatarScale);
+        .setScale(avatarScale)
+        .setVisible(false);
       const body = this.player.body as Phaser.Physics.Arcade.Body;
       // The 36x48 authored actor is 1.5x the old source contract while its
       // display scale is reduced by the same ratio.  Scaling the local body
@@ -545,18 +591,30 @@ export class WorldScene extends Phaser.Scene {
     } else {
       this.player.setPosition(spawn.x, spawn.y);
       this.player.setVelocity(0, 0);
-      this.player.setScale(avatarScale);
-      this.playerShadow
-        .setPosition(spawn.x + 2, spawn.y - 1)
-        .setScale(shadowScale, 0.7)
-        .setAlpha(0.5);
-      if (!this.playerGroundContact?.active) {
-        this.playerGroundContact = this.add.graphics();
-      }
+      this.player.setScale(avatarScale).setVisible(false);
+    }
+
+    if (!this.playerVisual?.active) {
+      this.playerVisual = this.add
+        .image(spawn.x, spawn.y, this.avatarKey('down', false, 0))
+        .setOrigin(0.5, 1)
+        .setScale(avatarScale);
+    } else {
+      this.playerVisual
+        .setPosition(spawn.x, spawn.y)
+        .setScale(avatarScale)
+        .setVisible(true);
     }
     this.playerDirection = 'down';
     this.player.setTexture(this.avatarKey('down', false, 0));
-    this.player.setDepth(DEPTH.actor + spawn.y);
+    this.playerVisual
+      .setTexture(this.avatarKey('down', false, 0))
+      .setDepth(DEPTH.actor + Math.round(spawn.y));
+    this.playerLastPhysicsPosition = { x: spawn.x, y: spawn.y };
+    this.playerMovementRequested = false;
+    this.playerMoving = false;
+    this.playerLastMovedAt = 0;
+    this.resetPlayerAnimation(this.time.now);
     this.updatePlayerGrounding();
   }
 
@@ -694,6 +752,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private updatePlayerMovement(time: number): void {
+    const displacementX = this.player.x - this.playerLastPhysicsPosition.x;
+    const displacementY = this.player.y - this.playerLastPhysicsPosition.y;
+    const displacement = Math.hypot(displacementX, displacementY);
+    this.playerLastPhysicsPosition = {
+      x: this.player.x,
+      y: this.player.y,
+    };
+
     let x = 0;
     let y = 0;
     const keyboardX =
@@ -743,41 +809,93 @@ export class WorldScene extends Phaser.Scene {
     const speed =
       PLAYER_SPEED * (running ? PLAYER_RUN_MULTIPLIER : 1);
     this.player.setVelocity(movement.x * speed, movement.y * speed);
-    this.playerMoving = movement.x !== 0 || movement.y !== 0;
+    const movementRequested = movement.x !== 0 || movement.y !== 0;
 
-    if (this.playerMoving) {
+    let directionChanged = false;
+    if (movementRequested) {
+      let direction: Direction;
       if (Math.abs(movement.x) > Math.abs(movement.y)) {
-        this.playerDirection = movement.x < 0 ? 'left' : 'right';
+        direction = movement.x < 0 ? 'left' : 'right';
       } else {
-        this.playerDirection = movement.y < 0 ? 'up' : 'down';
+        direction = movement.y < 0 ? 'up' : 'down';
       }
-      const footstepInterval = running ? 190 : 275;
-      if (time - this.lastFootstepAt >= footstepInterval) {
-        this.lastFootstepAt = time;
-        emitAudio({ type: 'footstep', surface: this.blueprint.surface });
+      if (!this.playerMovementRequested || direction !== this.playerDirection) {
+        this.playerDirection = direction;
+        directionChanged = true;
+        this.resetPlayerAnimation(time);
       }
     }
+    this.playerMovementRequested = movementRequested;
+
+    if (displacement > MOVEMENT_EPSILON) this.playerLastMovedAt = time;
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const blockedAlongRequest = Boolean(
+      (movement.x < 0 && (body.blocked.left || body.touching.left)) ||
+      (movement.x > 0 && (body.blocked.right || body.touching.right)) ||
+      (movement.y < 0 && (body.blocked.up || body.touching.up)) ||
+      (movement.y > 0 && (body.blocked.down || body.touching.down))
+    );
+    const actuallyMoving = Boolean(
+      displacement > MOVEMENT_EPSILON ||
+      (movementRequested &&
+        !blockedAlongRequest &&
+        time - this.playerLastMovedAt <= PHYSICS_STEP_GRACE_MS)
+    );
+    if (actuallyMoving) {
+      const previousFrameStep = Math.floor(
+        this.playerWalkDistance / WALK_FRAME_DISTANCE,
+      );
+      if (!directionChanged) this.playerWalkDistance += displacement;
+      const nextFrameStep = Math.floor(
+        this.playerWalkDistance / WALK_FRAME_DISTANCE,
+      );
+      for (
+        let frameStep = previousFrameStep + 1;
+        frameStep <= nextFrameStep;
+        frameStep += 1
+      ) {
+        if (FOOT_CONTACT_FRAMES.has(frameStep % AVATAR_FRAME_COUNTS.walk)) {
+          emitAudio({ type: 'footstep', surface: this.blueprint.surface });
+        }
+      }
+      this.playerWalkFrame = nextFrameStep % AVATAR_FRAME_COUNTS.walk;
+    } else if (this.playerMoving) {
+      this.resetPlayerAnimation(time);
+    }
+    this.playerMoving = actuallyMoving;
   }
 
-  private stopPlayer(): void {
+  private stopPlayer(time = this.time.now): void {
     this.player.setVelocity(0, 0);
+    this.playerLastPhysicsPosition = { x: this.player.x, y: this.player.y };
+    if (this.playerMoving || this.playerMovementRequested) {
+      this.resetPlayerAnimation(time);
+    }
+    this.playerMovementRequested = false;
     this.playerMoving = false;
   }
 
   private updateActorVisuals(time: number): void {
     const frame = this.playerMoving
-      ? Math.floor(time / 112) % AVATAR_FRAME_COUNTS.walk
-      : Math.floor(time / 1_400) % AVATAR_FRAME_COUNTS.idle;
+      ? this.playerWalkFrame
+      : Math.floor((time - this.playerAnimationStartedAt) / 1_400) %
+        AVATAR_FRAME_COUNTS.idle;
     const textureKey = this.avatarKey(
       this.playerDirection,
       this.playerMoving,
       frame,
     );
-    if (this.player.texture.key !== textureKey) this.player.setTexture(textureKey);
-    this.player.setDepth(DEPTH.actor + this.player.y);
+    const renderX = Math.round(this.player.x);
+    const renderY = Math.round(this.player.y);
+    if (this.playerVisual.texture.key !== textureKey) {
+      this.playerVisual.setTexture(textureKey);
+    }
+    this.playerVisual
+      .setPosition(renderX, renderY)
+      .setDepth(DEPTH.actor + renderY);
     this.playerShadow
-      .setPosition(this.player.x + 2, this.player.y - 1)
-      .setDepth(DEPTH.shadow + this.player.y);
+      .setPosition(renderX + 2, renderY - 1)
+      .setDepth(DEPTH.shadow + renderY);
     this.updatePlayerGrounding();
 
     if (this.interactionMarker?.active && this.nearestInteraction) {
@@ -817,7 +935,58 @@ export class WorldScene extends Phaser.Scene {
     contact.fillRect(x - 3, y - 2, 6, 1);
     contact.fillStyle(palette.bounce, 0.28);
     contact.fillRect(x - 2, y - 2, 4, 1);
-    contact.setDepth(DEPTH.shadow + this.player.y + 0.05);
+    contact.setDepth(DEPTH.shadow + y + 0.05);
+  }
+
+  private resetPlayerAnimation(time: number): void {
+    this.playerAnimationStartedAt = time;
+    this.playerWalkDistance = 0;
+    this.playerWalkFrame = 0;
+  }
+
+  private isExplorationInputSuspended(): boolean {
+    return Boolean(
+      this.transitionActive ||
+      this.placement ||
+      systemRuntime.getState().study.activeSession ||
+      this.isWorldUiBlocking()
+    );
+  }
+
+  private isWorldUiBlocking(): boolean {
+    if (this.isModalOrDialogueBlocking()) return true;
+    if (typeof document === 'undefined') return false;
+    return Boolean(
+      document.querySelector('.kh-ui .kh-decor-tray'),
+    );
+  }
+
+  private isModalOrDialogueBlocking(): boolean {
+    if (typeof document === 'undefined') return false;
+    return Boolean(
+      document.querySelector(
+        '.kh-ui [aria-modal="true"], .kh-ui .kh-dialogue',
+      ),
+    );
+  }
+
+  private hasRawKeyboardMovement(): boolean {
+    return Boolean(
+      this.keys.left.isDown ||
+      this.keys.right.isDown ||
+      this.keys.up.isDown ||
+      this.keys.down.isDown ||
+      this.cursorKeys.left.isDown ||
+      this.cursorKeys.right.isDown ||
+      this.cursorKeys.up.isDown ||
+      this.cursorKeys.down.isDown
+    );
+  }
+
+  private clearExplorationMotionIntent(): void {
+    this.touchDirections.clear();
+    this.directMove = { x: 0, y: 0, running: false };
+    this.clickTarget = null;
   }
 
   private updateNearestInteraction(): void {
@@ -864,6 +1033,7 @@ export class WorldScene extends Phaser.Scene {
       this.confirmPlacement();
       return;
     }
+    if (this.isWorldUiBlocking()) return;
     const interaction = this.nearestInteraction;
     if (!interaction) return;
     emitAudio({ type: 'interact' });
@@ -1018,7 +1188,7 @@ export class WorldScene extends Phaser.Scene {
       ? this.decorSprites.get(existingInstanceId)
       : undefined;
     original?.setVisible(false);
-    audio.playSfx(existingInstanceId ? 'place-pickup' : 'ui-confirm');
+    this.playPlacementFeedback('pickup');
     this.updatePlacement(start.x, start.y);
     this.publishState(true);
   }
@@ -1206,7 +1376,7 @@ export class WorldScene extends Phaser.Scene {
     const placement = this.placement;
     if (!placement) return;
     if (!placement.valid) {
-      emitAudio({ type: 'place', valid: false });
+      this.playPlacementFeedback('drop', false);
       this.cameras.main.shake(90, 0.002);
       emitToast('That spot is blocked. Try a clear patch of the grid.', 'warning');
       return;
@@ -1223,7 +1393,7 @@ export class WorldScene extends Phaser.Scene {
       placement.existingInstanceId,
     );
     if (!committed.ok) {
-      emitAudio({ type: 'place', valid: false });
+      this.playPlacementFeedback('drop', false);
       this.cameras.main.shake(90, 0.002);
       emitToast(
         committed.message ?? 'That placement could not be saved.',
@@ -1232,13 +1402,45 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    emitAudio({ type: 'place', valid: true });
+    this.playPlacementFeedback('drop');
     emitToast(`${placement.definition.name} found its place.`, 'success');
     this.destroyPlacementObjects();
     this.savedState = this.readWorldState();
     this.renderPlacedDecor();
     this.rebuildCollisionBodies();
     this.publishState(true);
+  }
+
+  private playPlacementFeedback(
+    phase: 'pickup' | 'drop',
+    valid = true,
+  ): void {
+    const placement = this.placement;
+    if (!placement) return;
+    const footprintArea =
+      placement.definition.footprint.width *
+      placement.definition.footprint.height;
+    const weight =
+      placement.definition.category === 'soft' ||
+      placement.definition.category === 'tabletop' ||
+      footprintArea <= 192
+        ? 'light'
+        : footprintArea >= 768
+          ? 'heavy'
+          : 'medium';
+    const view = this.cameras.main.worldView;
+    const halfViewWidth = Math.max(1, view.width / 2);
+
+    audio.playPlacementCue({
+      phase,
+      valid,
+      weight,
+      pan: Phaser.Math.Clamp(
+        (placement.x - view.centerX) / halfViewWidth,
+        -1,
+        1,
+      ),
+    });
   }
 
   private storeCurrentPlacement(): void {
@@ -1475,6 +1677,8 @@ export class WorldScene extends Phaser.Scene {
         .setAlpha(0.25 + random() * 0.55);
       this.ambientMotes.push({
         image,
+        x,
+        y,
         originX: x,
         originY: y,
         velocityX:
@@ -1498,42 +1702,47 @@ export class WorldScene extends Phaser.Scene {
     const bounds = this.blueprint.bounds;
     for (const mote of this.ambientMotes) {
       const wave = Math.sin(time / 700 + mote.phase);
-      mote.image.x += (mote.velocityX + wave * 1.5) * seconds;
-      mote.image.y += mote.velocityY * seconds;
+      mote.x += (mote.velocityX + wave * 1.5) * seconds;
+      mote.y += mote.velocityY * seconds;
       switch (mote.kind) {
         case 'dust':
           mote.image.setAlpha(0.18 + (wave + 1) * 0.16);
-          if (Math.abs(mote.image.x - mote.originX) > 18) mote.image.x = mote.originX;
-          if (Math.abs(mote.image.y - mote.originY) > 12) mote.image.y = mote.originY;
+          if (Math.abs(mote.x - mote.originX) > 18) mote.x = mote.originX;
+          if (Math.abs(mote.y - mote.originY) > 12) mote.y = mote.originY;
           break;
         case 'petals':
-          mote.image.setAngle(wave * 25);
           if (
-            mote.image.y > bounds.y + bounds.height ||
-            mote.image.x > bounds.x + bounds.width
+            mote.y > bounds.y + bounds.height ||
+            mote.x > bounds.x + bounds.width
           ) {
-            mote.image.setPosition(bounds.x, bounds.y + (mote.phase % 1) * bounds.height);
+            mote.x = bounds.x;
+            mote.y = bounds.y + (mote.phase % 1) * bounds.height;
           }
           break;
         case 'steam':
           mote.image.setAlpha(
             Phaser.Math.Clamp(
-              0.7 - (mote.originY - mote.image.y) / 40,
+              0.7 - (mote.originY - mote.y) / 40,
               0,
               0.6,
             ),
           );
-          if (mote.image.y < mote.originY - 34) {
-            mote.image.setPosition(mote.originX, mote.originY);
+          if (mote.y < mote.originY - 34) {
+            mote.x = mote.originX;
+            mote.y = mote.originY;
           }
           break;
         case 'fireflies':
           mote.image.setAlpha(0.15 + (wave + 1) * 0.35);
-          if (Math.abs(mote.image.x - mote.originX) > 24) mote.image.x = mote.originX;
-          if (Math.abs(mote.image.y - mote.originY) > 20) mote.image.y = mote.originY;
+          if (Math.abs(mote.x - mote.originX) > 24) mote.x = mote.originX;
+          if (Math.abs(mote.y - mote.originY) > 20) mote.y = mote.originY;
           break;
       }
-      mote.image.setDepth(DEPTH.weather + mote.image.y);
+      const renderX = Math.round(mote.x);
+      const renderY = Math.round(mote.y);
+      mote.image
+        .setPosition(renderX, renderY)
+        .setDepth(DEPTH.weather + renderY);
     }
   }
 
@@ -1559,6 +1768,8 @@ export class WorldScene extends Phaser.Scene {
         alpha: 0,
         duration: 480,
         ease: 'Quad.easeOut',
+        onUpdate: () =>
+          sparkle.setPosition(Math.round(sparkle.x), Math.round(sparkle.y)),
         onComplete: () => sparkle.destroy(),
       });
     }
@@ -1570,9 +1781,14 @@ export class WorldScene extends Phaser.Scene {
       | { direction: Direction; active: boolean; running?: boolean },
   ): void {
     if ('direction' in payload) {
+      if (payload.active && this.isExplorationInputSuspended()) return;
       if (payload.active) this.touchDirections.add(payload.direction);
       else this.touchDirections.delete(payload.direction);
       this.directMove.running = payload.running ?? false;
+      return;
+    }
+    if (this.isExplorationInputSuspended()) {
+      this.directMove = { x: 0, y: 0, running: false };
       return;
     }
     const movement = normalizeVector(payload.x, payload.y);
@@ -1760,7 +1976,13 @@ export class WorldScene extends Phaser.Scene {
     this.collisionZones.forEach((zone) => zone.destroy());
     this.collisionZones = [];
     this.locationObjects.forEach((object) => {
-      if (object !== this.player && object !== this.playerShadow) object.destroy();
+      if (
+        object !== this.player &&
+        object !== this.playerVisual &&
+        object !== this.playerShadow
+      ) {
+        object.destroy();
+      }
     });
     this.locationObjects = [];
     this.decorObjects.forEach((object) => object.destroy());

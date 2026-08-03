@@ -8,6 +8,10 @@ export type AudioBus = "master" | "music" | "ambience" | "sfx";
 
 export type FootstepSurface = "tatami" | "wood" | "stone" | "grass";
 
+export type PlacementPhase = "pickup" | "drop";
+
+export type PlacementWeight = "light" | "medium" | "heavy";
+
 export const SOUND_EFFECTS = [
   "ui-hover",
   "ui-confirm",
@@ -61,14 +65,31 @@ export interface AudioSnapshot {
   scene: AudioScene;
   ambience: AmbienceOptions;
   studyActive: boolean;
+  /** True only when the lifecycle controller, rather than the player, paused audio. */
+  visibilityPaused: boolean;
 }
 
 export type UiAudioAction = "hover" | "confirm" | "back";
 
+export interface FootstepCue {
+  surface?: FootstepSurface;
+  /** Normalized physical force, not character speed. */
+  intensity?: number;
+  /** Normalized screen position from -1 (left) to 1 (right). */
+  pan?: number;
+}
+
+export interface PlacementCue {
+  phase?: PlacementPhase;
+  valid?: boolean;
+  weight?: PlacementWeight;
+  pan?: number;
+}
+
 export type GameAudioEvent =
-  | { type: "footstep"; surface?: FootstepSurface }
+  | ({ type: "footstep" } & FootstepCue)
   | { type: "interact" }
-  | { type: "place"; valid?: boolean }
+  | ({ type: "place" } & PlacementCue)
   | { type: "rotate" }
   | { type: "travel" }
   | { type: "ui"; action?: UiAudioAction };
@@ -96,7 +117,8 @@ export interface AudioSystem {
    */
   unlock(): Promise<boolean>;
   /**
-   * Adds one-shot pointer/key listeners that call unlock from the gesture.
+   * Adds low-cost pointer/key recovery plus visibility lifecycle listeners.
+   * The returned cleanup owns all of those listeners.
    */
   bindUserGesture(target?: EventTarget): () => void;
   /**
@@ -108,11 +130,19 @@ export interface AudioSystem {
   setScene(scene: AudioScene, options?: Partial<AmbienceOptions>): void;
   setAmbience(options: Partial<AmbienceOptions>): void;
   setStudyActive(active: boolean): void;
+  /** Play exactly once from an animation foot-contact callback. */
+  playFootstep(cue?: FootstepCue): void;
+  /** Play exactly once when placement state commits, never on pointer move. */
+  playPlacementCue(cue?: PlacementCue): void;
   playSfx(effect: SoundEffect): void;
   setVolume(bus: AudioBus, value: number): void;
   setMuted(muted: boolean): void;
   toggleMuted(): boolean;
   suspend(): Promise<void>;
   resume(): Promise<boolean>;
+  /**
+   * Immediately stops owned generators, removes bindings, and initiates
+   * context close. A later app-level bind starts a fresh lifecycle.
+   */
   dispose(): void;
 }
