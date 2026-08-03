@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://komorebi.house/contracts/asset-manifest.schema.json",
-  "title": "Komorebi House V2 slice manifest",
+  "title": "Komorebi House original-room restyle manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "sliceId", "runtime", "references", "assets", "acceptance"],
+  "required": ["schemaVersion", "sliceId", "runtime", "geometryLock", "references", "cutover", "assets", "acceptance"],
   "properties": {
-    "schemaVersion": { "const": 1 },
-    "sliceId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "schemaVersion": { "const": 2 },
+    "sliceId": { "const": "vertical-slice-01" },
     "runtime": {
       "type": "object",
       "additionalProperties": false,
@@ -18,6 +18,30 @@
         "worldTile": { "const": [16, 16] },
         "placementGrid": { "const": [8, 8] },
         "geometrySourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "geometryLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "room"],
+      "properties": {
+        "files": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "$ref": "#/$defs/hashedFile" }
+        },
+        "room": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bounds", "placementArea", "spawns", "portals", "interactions"],
+          "properties": {
+            "bounds": { "const": [0, 0, 480, 270] },
+            "placementArea": { "const": [58, 104, 364, 124] },
+            "spawns": { "const": [[240, 172], [240, 224], [104, 214]] },
+            "portals": { "const": [[206, 232, 70, 38], [66, 224, 58, 46]] },
+            "interactions": { "const": [[136, 112], [300, 102], [118, 82], [380, 108]] }
+          }
+        }
       }
     },
     "references": {
@@ -35,44 +59,100 @@
         }
       }
     },
+    "cutover": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["externalFurnitureLoader", "strictRequiredAssetFailure", "imageGenerationAuthorized", "newRuntimeFiles", "newRenderers", "newFeatureFlags", "newAtlases", "newMapSchemas", "newMigrationLayers", "newDuplicateAssetPaths", "maxNetRuntimeSourceLines"],
+      "properties": {
+        "externalFurnitureLoader": { "enum": ["absent-blocked", "strict-ready"] },
+        "strictRequiredAssetFailure": { "enum": ["not-implemented-blocked", "implemented"] },
+        "imageGenerationAuthorized": { "type": "boolean" },
+        "newRuntimeFiles": { "const": 0 },
+        "newRenderers": { "const": 0 },
+        "newFeatureFlags": { "const": 0 },
+        "newAtlases": { "const": 0 },
+        "newMapSchemas": { "const": 0 },
+        "newMigrationLayers": { "const": 0 },
+        "newDuplicateAssetPaths": { "const": 0 },
+        "maxNetRuntimeSourceLines": { "const": 0 }
+      }
+    },
     "assets": {
       "type": "array",
-      "minItems": 12,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "family", "kind", "state", "proof"],
-        "properties": {
-          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-          "family": { "type": "string" },
-          "kind": { "enum": ["architecture", "environment", "furniture", "character", "occluder"] },
-          "state": { "enum": ["brief", "candidate", "normalized", "metadata-bound", "runtime-approved", "shipped"] },
-          "proof": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["isolated", "anchor", "footprint", "runtimeCapture"],
-            "properties": {
-              "isolated": { "type": "boolean" },
-              "anchor": { "type": "boolean" },
-              "footprint": { "type": "boolean" },
-              "runtimeCapture": { "type": "boolean" }
-            }
-          }
-        }
-      }
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/asset" }
     },
     "acceptance": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["coldBoot", "placement", "occlusion", "saveReload", "mobileTouch", "nightDay", "visualReview"],
+      "required": ["coldBoot", "placement", "occlusion", "saveReload", "mobileTouch", "nightPresentation", "visualReview", "visualScoreMinimum", "visualCategoryMinimum", "desktopCapture", "mobileCapture"],
       "properties": {
         "coldBoot": { "type": "boolean" },
         "placement": { "type": "boolean" },
         "occlusion": { "type": "boolean" },
         "saveReload": { "type": "boolean" },
         "mobileTouch": { "type": "boolean" },
-        "nightDay": { "type": "boolean" },
-        "visualReview": { "type": "boolean" }
+        "nightPresentation": { "type": "boolean" },
+        "visualReview": { "type": "boolean" },
+        "visualScoreMinimum": { "const": 85 },
+        "visualCategoryMinimum": { "const": 8 },
+        "desktopCapture": { "const": [1280, 720, 1] },
+        "mobileCapture": { "const": [390, 844, 2] }
+      }
+    }
+  },
+  "$defs": {
+    "hashedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "symbol", "scope"],
+      "properties": {
+        "file": { "type": "string" },
+        "symbol": { "type": "string" },
+        "scope": { "type": "string" }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "kind", "state", "runtimeKey", "nativeCanvas", "runtimeOrigin", "currentProducer", "replacementTarget", "currentFallbacks", "sameChangeDeletionTargets", "retainedBlockers", "proof"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "family": { "type": "string" },
+        "kind": { "enum": ["architecture", "furniture"] },
+        "state": { "enum": ["brief", "candidate", "normalized", "metadata-bound", "runtime-approved", "shipped"] },
+        "runtimeKey": { "type": "string", "pattern": "^koh:" },
+        "nativeCanvas": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "runtimeOrigin": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "footprint": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+        "starterPlacement": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+        "currentProducer": { "type": "string" },
+        "replacementTarget": { "type": ["string", "null"] },
+        "currentFallbacks": { "type": "array", "items": { "$ref": "#/$defs/fallback" } },
+        "sameChangeDeletionTargets": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "retainedBlockers": { "type": "array", "items": { "type": "string" } },
+        "proof": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["isolated", "anchor", "footprint", "runtimeCapture", "oldProducerDeleted"],
+          "properties": {
+            "isolated": { "type": "boolean" },
+            "anchor": { "type": "boolean" },
+            "footprint": { "type": "boolean" },
+            "runtimeCapture": { "type": "boolean" },
+            "oldProducerDeleted": { "type": "boolean" }
+          }
+        }
       }
     }
   }

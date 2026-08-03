@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sliceId": "vertical-slice-01",
   "runtime": {
     "engine": "phaser-3.90.0",
@@ -7,6 +7,21 @@
     "worldTile": [16, 16],
     "placementGrid": [8, 8],
     "geometrySourceCommit": "05a55d847c66e095607f00f61e49271a034dd8a6"
+  },
+  "geometryLock": {
+    "files": [
+      { "path": "src/game/locations.ts", "sha256": "765ecc1cdc8ef431f0a8e3cf731d37dd1dd32f7eaa729192588c3835c4bac31d" },
+      { "path": "src/game/constants.ts", "sha256": "658c6f9c349b6a1e6a9e7867112deefe21211b01b5de829d9ebbd27945ab8e71" },
+      { "path": "src/game/storage.ts", "sha256": "dba990a77d9125a02b4a0013c24b5bd32ff4ec1a54159b1d5d66daef32631fe6" },
+      { "path": "src/art/avatar.ts", "sha256": "6d406315ab76c3c908386db96a460bbfefb895eeafc8d9720906e21c9b9f73d4" }
+    ],
+    "room": {
+      "bounds": [0, 0, 480, 270],
+      "placementArea": [58, 104, 364, 124],
+      "spawns": [[240, 172], [240, 224], [104, 214]],
+      "portals": [[206, 232, 70, 38], [66, 224, 58, 46]],
+      "interactions": [[136, 112], [300, 102], [118, 82], [380, 108]]
+    }
   },
   "references": [
     {
@@ -22,19 +37,140 @@
       "role": "day-derived"
     }
   ],
+  "cutover": {
+    "externalFurnitureLoader": "absent-blocked",
+    "strictRequiredAssetFailure": "not-implemented-blocked",
+    "imageGenerationAuthorized": false,
+    "newRuntimeFiles": 0,
+    "newRenderers": 0,
+    "newFeatureFlags": 0,
+    "newAtlases": 0,
+    "newMapSchemas": 0,
+    "newMigrationLayers": 0,
+    "newDuplicateAssetPaths": 0,
+    "maxNetRuntimeSourceLines": 0
+  },
   "assets": [
-    { "id": "room-shell", "family": "room-architecture", "kind": "architecture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "shoji-window", "family": "room-architecture", "kind": "architecture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "engawa", "family": "room-architecture", "kind": "architecture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "visible-garden", "family": "garden-environment", "kind": "environment", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "study-desk", "family": "study-furniture", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "floor-chair", "family": "seating", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "bookshelf", "family": "storage", "kind": "occluder", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "desk-lamp", "family": "lighting", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "potted-plant", "family": "plants", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "low-table", "family": "tables", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "storage-cabinet", "family": "storage", "kind": "furniture", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } },
-    { "id": "player-character", "family": "characters", "kind": "character", "state": "brief", "proof": { "isolated": false, "anchor": false, "footprint": false, "runtimeCapture": false } }
+    {
+      "id": "room-base",
+      "family": "room-architecture",
+      "kind": "architecture",
+      "state": "brief",
+      "runtimeKey": "koh:world:room",
+      "nativeCanvas": [480, 270],
+      "runtimeOrigin": [0, 0],
+      "currentProducer": "public/assets/world/room-base.png",
+      "replacementTarget": "public/assets/world/room-base.png",
+      "currentFallbacks": [
+        { "file": "src/game/locationRenderer.ts", "symbol": "renderRoom", "scope": "room-only procedural environment" }
+      ],
+      "sameChangeDeletionTargets": ["src/game/locationRenderer.ts#renderRoom"],
+      "retainedBlockers": ["src/game/locationRenderer.ts remains shared by garden, cafe, and park"],
+      "proof": { "isolated": false, "anchor": true, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+    },
+    {
+      "id": "round-chabudai",
+      "family": "starter-furniture",
+      "kind": "furniture",
+      "state": "brief",
+      "runtimeKey": "koh:decor:round-chabudai",
+      "nativeCanvas": [58, 34],
+      "runtimeOrigin": [0.5, 1],
+      "footprint": [32, 24],
+      "starterPlacement": [294, 190, 0],
+      "currentProducer": "src/art/furniture.ts#round-chabudai",
+      "replacementTarget": null,
+      "currentFallbacks": [
+        { "file": "src/game/catalogAdapter.ts", "symbol": "FALLBACK_ART_ALIASES.round-chabudai", "scope": "alias to kotatsu" },
+        { "file": "src/game/pixelTextures.ts", "symbol": "registerFallbackPixelTextures", "scope": "kotatsu texture producer" }
+      ],
+      "sameChangeDeletionTargets": ["src/art/furniture.ts#round-chabudai", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.round-chabudai"],
+      "retainedBlockers": [
+        "no external furniture image loader exists",
+        "src/game/pixelTextures.ts remains shared by avatar, shadow, cursor, particle, and unrelated catalog fallback consumers"
+      ],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+    },
+    {
+      "id": "patchwork-zabuton",
+      "family": "starter-furniture",
+      "kind": "furniture",
+      "state": "brief",
+      "runtimeKey": "koh:decor:patchwork-zabuton",
+      "nativeCanvas": [32, 17],
+      "runtimeOrigin": [0.5, 1],
+      "footprint": [16, 12],
+      "starterPlacement": [294, 210, 0],
+      "currentProducer": "src/art/furniture.ts#patchwork-zabuton",
+      "replacementTarget": null,
+      "currentFallbacks": [
+        { "file": "src/game/catalogAdapter.ts", "symbol": "FALLBACK_ART_ALIASES.patchwork-zabuton", "scope": "alias to zabuton" },
+        { "file": "src/game/pixelTextures.ts", "symbol": "registerFallbackPixelTextures", "scope": "zabuton texture producer" }
+      ],
+      "sameChangeDeletionTargets": ["src/art/furniture.ts#patchwork-zabuton", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.patchwork-zabuton"],
+      "retainedBlockers": [
+        "no external furniture image loader exists",
+        "src/game/pixelTextures.ts remains shared by avatar, shadow, cursor, particle, and unrelated catalog fallback consumers"
+      ],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+    },
+    {
+      "id": "folded-futon",
+      "family": "starter-furniture",
+      "kind": "furniture",
+      "state": "brief",
+      "runtimeKey": "koh:decor:folded-futon",
+      "nativeCanvas": [62, 35],
+      "runtimeOrigin": [0.5, 1],
+      "footprint": [32, 12],
+      "starterPlacement": [194, 212, 0],
+      "currentProducer": "src/art/furniture.ts#folded-futon",
+      "replacementTarget": null,
+      "currentFallbacks": [
+        { "file": "src/game/catalogAdapter.ts", "symbol": "FALLBACK_ART_ALIASES.folded-futon", "scope": "alias to futon" },
+        { "file": "src/game/pixelTextures.ts", "symbol": "registerFallbackPixelTextures", "scope": "futon texture producer" }
+      ],
+      "sameChangeDeletionTargets": ["src/art/furniture.ts#folded-futon", "src/game/catalogAdapter.ts#FALLBACK_ART_ALIASES.folded-futon"],
+      "retainedBlockers": [
+        "no external furniture image loader exists",
+        "src/game/pixelTextures.ts remains shared by avatar, shadow, cursor, particle, and unrelated catalog fallback consumers"
+      ],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+    },
+    {
+      "id": "seigaiha-notebook",
+      "family": "starter-furniture",
+      "kind": "furniture",
+      "state": "brief",
+      "runtimeKey": "koh:decor:seigaiha-notebook",
+      "nativeCanvas": [20, 13],
+      "runtimeOrigin": [0.5, 1],
+      "footprint": [16, 12],
+      "starterPlacement": [282, 178, 0],
+      "currentProducer": "src/art/furniture.ts#seigaiha-notebook",
+      "replacementTarget": null,
+      "currentFallbacks": [],
+      "sameChangeDeletionTargets": ["src/art/furniture.ts#seigaiha-notebook"],
+      "retainedBlockers": ["no external furniture image loader exists"],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+    },
+    {
+      "id": "milk-glass-desk-lamp",
+      "family": "starter-furniture",
+      "kind": "furniture",
+      "state": "brief",
+      "runtimeKey": "koh:decor:milk-glass-desk-lamp",
+      "nativeCanvas": [28, 39],
+      "runtimeOrigin": [0.5, 1],
+      "footprint": [16, 12],
+      "starterPlacement": [306, 178, 0],
+      "currentProducer": "src/art/furniture.ts#milk-glass-desk-lamp",
+      "replacementTarget": null,
+      "currentFallbacks": [],
+      "sameChangeDeletionTargets": ["src/art/furniture.ts#milk-glass-desk-lamp"],
+      "retainedBlockers": ["no external furniture image loader exists"],
+      "proof": { "isolated": false, "anchor": false, "footprint": true, "runtimeCapture": false, "oldProducerDeleted": false }
+    }
   ],
   "acceptance": {
     "coldBoot": false,
@@ -42,7 +178,11 @@
     "occlusion": false,
     "saveReload": false,
     "mobileTouch": false,
-    "nightDay": false,
-    "visualReview": false
+    "nightPresentation": false,
+    "visualReview": false,
+    "visualScoreMinimum": 85,
+    "visualCategoryMinimum": 8,
+    "desktopCapture": [1280, 720, 1],
+    "mobileCapture": [390, 844, 2]
   }
 }
