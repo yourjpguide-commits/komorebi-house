@@ -31,7 +31,7 @@ The five movable assets are one coordinated visual family but receive independen
 - Use deep chromatic navy/indigo shadows, warm paper and amber light, and localized cyan/coral accents.
 - Keep one-source-pixel chromatic contours, intentional clusters, material-specific texture, and clean nearest-neighbor edges.
 - Reject global neon washes, mixed pixel cadence, semi-transparent fringe, noisy microtexture, copied characters/UI/compositions, and any geometry drift.
-- Night is the first review state. Day is out of this slice and must later derive from identical geometry and asset identities.
+- Day is the first review state and preserves the original screen's geometry. Any later night presentation must derive from identical geometry and asset identities.
 
 ## Pre-generation stop
 
