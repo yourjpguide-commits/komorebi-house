@@ -21,7 +21,10 @@ import {
   WORLD_VIEWPORT_HEIGHT,
   WORLD_VIEWPORT_Y,
 } from '../game/constants';
-import { validateScenePlacement } from '../game/corePlacementAdapter';
+import {
+  tabletopSupportAt,
+  validateScenePlacement,
+} from '../game/corePlacementAdapter';
 import {
   dispatchGameEvent,
   emitAudio,
@@ -653,6 +656,17 @@ export class WorldScene extends Phaser.Scene {
       const footprintHeight = rotated
         ? definition.footprint.width
         : definition.footprint.height;
+      const support =
+        definition.category === 'tabletop' ||
+        definition.placementSurface === 'tabletop'
+          ? tabletopSupportAt(
+              this.savedState.placedDecor,
+              placement.location,
+              placement.x,
+              placement.y,
+            )
+          : undefined;
+      const presentationY = support?.y ?? placement.y;
       const shadow = this.add
         .image(placement.x, placement.y - 2, ART_KEYS.shadow)
         .setOrigin(0.5)
@@ -661,14 +675,14 @@ export class WorldScene extends Phaser.Scene {
           Phaser.Math.Clamp(footprintHeight / 12, 0.55, 1.65),
         )
         .setAlpha(0.62)
-        .setDepth(DEPTH.shadow + placement.y);
+        .setDepth(DEPTH.worldObject + presentationY + 0.05);
       const sprite = this.add
         .image(placement.x, placement.y, textureKey)
         .setOrigin(0.5, 1)
         // The texture key already selects an authored cel for its supported
         // facing; runtime rotation would blur and falsify the pixel projection.
         .setAngle(0)
-        .setDepth(DEPTH.worldObject + placement.y)
+        .setDepth(DEPTH.worldObject + presentationY + 0.1)
         .setInteractive({ useHandCursor: true });
 
       sprite.on(
@@ -1424,42 +1438,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private hasTabletopSupport(x: number, y: number): boolean {
-    return this.savedState.placedDecor.some((placement) => {
-      if (placement.location !== this.blueprint.id) return false;
-      const support = sceneDecorById(placement.itemId);
-      if (!support) return false;
-      const supportsTabletop =
-        support.category === 'desk' ||
-        [
-          'low-desk',
-          'kotatsu',
-          'round-chabudai',
-          'hinoki-writing-desk',
-          'low-desk-hinoki',
-          'persimmon-kotatsu',
-        ].includes(support.id);
-      if (!supportsTabletop) return false;
-      const rotation = this.supportedFurnitureRotation(
-        support.id,
-        placement.rotation,
-      );
-      const rotated = rotation === 90 || rotation === 270;
-      const width = rotated
-        ? support.footprint.height
-        : support.footprint.width;
-      const height = rotated
-        ? support.footprint.width
-        : support.footprint.height;
-      return pointInRect(
-        { x, y },
-        {
-          x: placement.x - width / 2,
-          y: placement.y - height,
-          width,
-          height,
-        },
-      );
-    });
+    return Boolean(
+      tabletopSupportAt(
+        this.savedState.placedDecor,
+        this.blueprint.id,
+        x,
+        y,
+      ),
+    );
   }
 
   private createAmbient(): void {
