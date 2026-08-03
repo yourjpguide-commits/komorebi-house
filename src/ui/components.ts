@@ -9,7 +9,6 @@ import type {
   FocusActivity,
   GameUIState,
   ItemCategory,
-  ItemVisual,
   ToastMessage,
   } from "./types";
 
@@ -53,12 +52,6 @@ function compactLocationName(
   }
 }
 
-function compactLocationKana(
-  location: GameUIState["locations"][number],
-): string {
-  return location.id === "cafe" ? "こもれび・喫茶" : location.nameJa;
-}
-
 /**
  * Rotation is only offered when both the placement record and authored texture
  * cels support another facing. Upright props deliberately have a single
@@ -89,7 +82,6 @@ function itemArt(item: CatalogItem, compact = false): string {
     </div>`;
   }
 
-  const visual: ItemVisual = item.visual ?? "vase";
   const cacheKey = `${item.id}:${item.palette ?? "default"}`;
   let svg = furnitureSvgCache.get(cacheKey);
   if (!svg) {
@@ -107,7 +99,7 @@ function itemArt(item: CatalogItem, compact = false): string {
     furnitureSvgCache.set(cacheKey, svg);
   }
 
-  return `<div class="kh-item-art${compact ? " is-compact" : ""}" data-visual="${visual}" aria-hidden="true">
+  return `<div class="kh-item-art${compact ? " is-compact" : ""}" aria-hidden="true">
     ${svg}
   </div>`;
 }
@@ -118,14 +110,6 @@ function renderStatusBar(state: GameUIState): string {
   );
 
   return `<header class="kh-status-bar" aria-label="Game status">
-    <div class="kh-status-brand" aria-label="Komorebi House">
-      <span class="kh-brand-seal">${icon("leaf")}</span>
-      <span class="kh-brand-copy">
-        <span class="kh-brand-title">KOMOREBI</span>
-        <span class="kh-brand-kana">こもれび日和</span>
-      </span>
-    </div>
-
     <div class="kh-status-place">
       <span class="kh-status-weather" data-weather="${state.weather}">
         ${weatherIcon(state.weather)}
@@ -138,18 +122,6 @@ function renderStatusBar(state: GameUIState): string {
     </div>
 
     <div class="kh-status-actions">
-      <button class="kh-status-prompt" type="button" data-action="goal" aria-label="Current little goal">
-        ${icon("spark")}
-        <span>
-          <small>Today’s little goal</small>
-          <strong>${escapeHtml(state.goalTitle)}</strong>
-        </span>
-        ${
-          typeof state.goalProgress === "number"
-            ? `<i style="--goal-progress:${Math.max(0, Math.min(1, state.goalProgress))}"></i>`
-            : ""
-        }
-      </button>
       <div class="kh-currency" title="Hikari earned by spending time well" data-testid="hud-coins">
         <span class="kh-hikari-gem">${icon("hikari")}</span>
         <span><strong><span aria-hidden="true">${formatHikari(state.coins)}</span><span class="kh-visually-hidden">${Math.max(0, Math.floor(state.coins))}</span></strong><small>光 HIKARI</small></span>
@@ -166,7 +138,6 @@ function renderStatusBar(state: GameUIState): string {
 
 function renderLocationRail(state: GameUIState): string {
   return `<nav class="kh-location-rail" aria-label="Places">
-    <span class="kh-rail-label">PLACES</span>
     <div class="kh-location-list">
       ${state.locations
         .map(
@@ -183,16 +154,12 @@ function renderLocationRail(state: GameUIState): string {
             <span class="kh-location-icon">${icon(
               location.unlocked ? locationIcon(location.icon) : "lock",
             )}</span>
-            <span class="kh-location-copy">
-              <strong>${escapeHtml(compactLocationName(location))}</strong>
-              <small>${escapeHtml(compactLocationKana(location))}</small>
-            </span>
           </button>`,
         )
         .join("")}
     </div>
-    <button class="kh-map-button" type="button" data-action="map-open" data-testid="travel-button">
-      ${icon("map")}<span>Neighborhood map</span>
+    <button class="kh-map-button" type="button" data-action="map-open" data-testid="travel-button" aria-label="Neighborhood map">
+      ${icon("map")}
     </button>
   </nav>`;
 }
@@ -201,14 +168,14 @@ function renderQuickActions(state: GameUIState): string {
   const focusRunning =
     state.focus.phase === "running" || state.focus.phase === "paused";
   return `<aside class="kh-quick-actions" aria-label="Quick actions">
-    <button type="button" data-action="shop-open" aria-pressed="${state.activePanel === "shop" && !state.customizerMode}">
-      <span>${icon("shop")}</span><b>Shop</b><small>暮らしの店</small>
+    <button type="button" data-action="shop-open" aria-label="Shop" title="Shop · 暮らしの店" aria-pressed="${state.activePanel === "shop" && !state.customizerMode}">
+      <span>${icon("shop")}</span>
     </button>
-    <button type="button" data-action="customizer-open" data-testid="customize-button" class="${state.decorMode ? "is-active" : ""}" aria-pressed="${state.decorMode || state.activePanel === "inventory" || (state.activePanel === "shop" && state.customizerMode)}">
-      <span>${icon("bag")}</span><b>Decorate</b><small>模様替え</small>
+    <button type="button" data-action="customizer-open" data-testid="customize-button" class="${state.decorMode ? "is-active" : ""}" aria-label="Decorate" title="Decorate · 模様替え" aria-pressed="${state.decorMode || state.activePanel === "inventory" || (state.activePanel === "shop" && state.customizerMode)}">
+      <span>${icon("bag")}</span>
     </button>
-    <button type="button" data-action="focus-open" data-testid="focus-button" class="${focusRunning ? "is-active" : ""}" aria-pressed="${focusRunning || state.activePanel === "focus"}">
-      <span>${icon("timer")}</span><b>${focusRunning ? "Focusing" : "Focus"}</b><small>${focusRunning ? formatClock(state.focus.remainingSeconds) : "ひとやすみ"}</small>
+    <button type="button" data-action="focus-open" data-testid="focus-button" class="${focusRunning ? "is-active" : ""}" aria-label="${focusRunning ? `Focusing, ${formatClock(state.focus.remainingSeconds)} remaining` : "Focus"}" title="${focusRunning ? `Focusing · ${formatClock(state.focus.remainingSeconds)}` : "Focus · ひとやすみ"}" aria-pressed="${focusRunning || state.activePanel === "focus"}">
+      <span>${icon("timer")}</span>
     </button>
   </aside>`;
 }
