@@ -6,3 +6,4 @@ playwright-report/
 .wrangler/
 .DS_Store
 *.log
+art/work/

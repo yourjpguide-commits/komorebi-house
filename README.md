@@ -27,3 +27,6 @@ npm run build
 
 All game art, names, characters, interface, and world layouts are original
 clean-room work created for this project.
+
+The next visual-production phase is defined in
+[`docs/ART-PIPELINE-V2.md`](docs/ART-PIPELINE-V2.md).

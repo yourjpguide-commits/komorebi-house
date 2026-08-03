@@ -1,8 +1,8 @@
 # Komorebi House — Pixel Art Bible
 
 **Status:** Normative visual contract
-**Art target:** Original, premium handheld-inspired pixel art for a browser game
-**Version:** 1.0
+**Art target:** Original, premium handheld-inspired pixel art for a browser game; V2 is CityPop night-primary and day-derived
+**Version:** 2.0
 
 This document is the single visual source of truth for `Komorebi House`. When a mockup, generated asset, implementation shortcut, or reference image conflicts with this document, this document wins until the art director explicitly revises it.
 
@@ -26,7 +26,7 @@ The visual promise is:
 
 ### 2.1 Komorebi is the signature
 
-Sun filtered through leaves is the game’s main visual motif. It appears as sparse, clustered pools of warm light with leaf-shaped interruptions—not as a generic full-screen bloom.
+Komorebi remains the signature visual language. In V2 its primary expression is interrupted after-dark light through shoji, leaves, eaves, window grids, lamp pools, and small wet reflections. Daylight komorebi is the derived counterpart. Both use sparse, clustered pools with leaf-shaped interruptions—not a generic full-screen bloom.
 
 - Dapple groups contain one large cluster, two medium clusters, and a few 1–2 px flecks.
 - The pattern drifts by only 1–2 native pixels over several seconds.
@@ -54,6 +54,15 @@ Every player action gets small, material-aware feedback:
 - A sliding panel glides on its track instead of swinging.
 - Tatami produces no dust puff; gravel, wood, soil, and paving each use different footstep particles.
 - Tea, coffee, pages, watering, rain, and leaves use distinct micro-motion.
+
+### 2.6 CityPop night-primary identity
+
+“CityPop” is an internal mood descriptor for an original contemporary Japanese neighborhood after dark: deep ink/indigo ambient values, warm domestic and café interiors, compact local lamps, window lattices, wet-surface reflections, and restrained cyan/coral accents. It is not an instruction to imitate an artist, album, game, decade-specific graphic package, vaporwave, or neon skyline.
+
+- Night is the canonical composition and review state.
+- Day is derived from the same source pixels, palette IDs, metadata, and geometry. It may attenuate night-only light/reflection layers, but may not change topology, footprints, anchors, occlusion, draw bands, or navigation.
+- Japanese specificity remains ordinary-life architecture, materials, objects, and meaningful text; neon is a local light event, not the setting’s identity.
+- CityPop accents remain local and sparse. No global cyan, coral, orange, bloom, or color-wash overlay is permitted.
 
 ## 3. Originality and clean-room boundary
 
@@ -183,6 +192,8 @@ Ramp values are listed darkest to lightest.
 | **Vermilion accent** | `#A83F35` `#D65D48` `#F28D64` | selection, small décor accents |
 | **Sakura accent** | `#A96E78` `#E9AAA7` `#F6D8D2` | petals, textiles, dawn |
 | **Lamp light** | `#9A5B3A` `#D58B4C` `#FFC96B` `#FFE6A6` | bulbs, evening pools, steam rim |
+| **City Cyan accent** | `#24516B` `#43A7AF` `#A0E5D2` | compact signs, utility light, cool reflections, rain/water accents |
+| **City Coral accent** | `#713A4A` `#C65369` `#FF9A7E` | restrained signs, fabric, warm reflected accents |
 
 Character skin uses three compatible foundation ramps rather than treating clay as one universal skin color:
 
@@ -219,7 +230,9 @@ All locations retain Night Ink shadows, cream highlights, and one repeated indig
 
 ### 6.1 Indexed color and reproducible state LUTs
 
-Each table row is an indexed ramp named `INK`, `WAS`, `CED`, `TAT`, `LEAF`, `IND`, `STONE`, `CLAY`, `VER`, `SAK`, or `LAMP`; indices increase from darkest (`0`) to lightest. Skin ramps are `SKIN_ROSE`, `SKIN_OLIVE`, and `SKIN_UMBER`. Source art stores these palette IDs, not unconstrained RGBA colors.
+Each table row is an indexed ramp named `INK`, `WAS`, `CED`, `TAT`, `LEAF`, `IND`, `STONE`, `CLAY`, `VER`, `SAK`, `LAMP`, `CYN`, or `COR`; indices increase from darkest (`0`) to lightest. Skin ramps are `SKIN_ROSE`, `SKIN_OLIVE`, and `SKIN_UMBER`. Source art stores these palette IDs, not unconstrained RGBA colors.
+
+`CYN` and `COR` may remain identity only inside a compact authored emissive/reflection core or a small physical accent. Outside those uses they pass through the normal state LUT. They never replace `INK`, `IND`, or `LAMP` as ambient ramps, and together remain inside the existing high-chroma attention target.
 
 Time/weather LUTs are generated once at build time with this exact per-channel sRGB integer mix:
 
@@ -752,6 +765,8 @@ When the player walks behind a tall object or canopy:
 
 ## 14. Lighting and time of day
 
+Night is the V2 art-director, capture, and comparison state. Day is derived from the same palette-indexed source and metadata package using the Day LUT and attenuation of night-only masks; it is not a separately generated asset family.
+
 ### Dawn
 
 - Cool Night Ink shadows.
@@ -776,6 +791,8 @@ When the player walks behind a tall object or canopy:
 ### Night
 
 - Indigo/Night Ink ambient palette map.
+- This is the V2 hero state and first review target.
+- CityPop light comes from ordinary local sources—lamps, shoji, windows, café fixtures, utility lights, and wet reflections—not a generic neon skyline.
 - Lamps create compact pools with stepped boundaries.
 - Windows show a few stable neighborhood lights.
 - The player, interactables, exits, and floor boundaries retain readable value separation.
@@ -996,15 +1013,19 @@ Examples:
 
 If generative tools are used:
 
-1. Generate isolated subjects or controlled material studies.
-2. Rebuild/clean at the native pixel grid.
-3. Enforce the master palette or an approved extension.
-4. Correct silhouette, anchor, perspective, and lighting by hand/tooling.
-5. Inspect against both light and dark checker backgrounds.
-6. Reject halos, semi-transparent fringe, floor contamination, and unplanned texture noise.
-7. Bind approved art to metadata before scene placement.
+1. Freeze a brief naming subject/function, placement plane, native canvas, facing, material/palette IDs, night-primary state, local light source, background treatment, and originality constraints.
+2. Supply ordered style, clean live-scene, local slot, and accepted-family references. Generate only isolated subjects or controlled material studies—never a furnished scene for movable-sprite extraction.
+3. Produce two to four candidates, then make small directed edits that state both the requested change and everything that must remain fixed.
+4. Treat output as a visual proposal, never final shipping art.
+5. Clean at 1× native resolution and enforce the master palette, hard pixel clusters, exact canvas, and deterministic alpha policy.
+6. Correct silhouette, perspective, materials, lighting, facings, and state treatment through deterministic tooling and art-direction review.
+7. Keep day/night variants geometrically identical or use separate authored emissive/reflection masks.
+8. Inspect on light and dark checker backgrounds and inside the actual Phaser scene.
+9. Reject halos, fringe, floor contamination, accidental text, logos, UI, and unplanned texture noise.
+10. Bind approved art to metadata before scene placement.
+11. Record prompt/edit lineage, model/version, request IDs when available, references, selected candidate, cleanup revision, reviewer, and final content hash.
 
-Image generation never owns map topology, footprint, collision, anchor, depth, or final sprite-sheet coordinates.
+Image generation never owns map topology, exact grid placement, footprint, collision, anchor, depth, state correspondence, or final sprite-sheet coordinates.
 
 ### 19.4 Browser production budget
 
@@ -1080,6 +1101,8 @@ Without labels, a reviewer can distinguish:
 - Light direction remains coherent.
 - Wet materials visibly change by material, not one global overlay.
 - Decorative animation is asynchronous and never distracts from study UI.
+- Night is reviewed first; day preserves identical geometry, anchors, footprints, collision, draw bands, and occlusion masks.
+- CityPop accent colors remain localized and do not flatten material identity.
 
 ### 20.6 Browser and viewport
 
