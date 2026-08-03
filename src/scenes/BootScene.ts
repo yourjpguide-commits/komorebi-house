@@ -49,13 +49,13 @@ export class BootScene extends Phaser.Scene {
       assertTextureDimensions(this, key, width, height);
     });
     registerPixelArtTextures(this as unknown as PixelTextureSceneLike, {
-      locations: ['room', 'garden', 'cafe', 'park'],
+      // Authored backplates above are the sole live environment path. Passing
+      // an empty list prevents duplicate 480x270 procedural canvases from
+      // occupying texture memory at boot.
+      locations: [],
       itemIds: PROCEDURAL_FURNITURE_IDS,
       furnitureRotations: [0, 90, 180, 270],
       avatarActions: ['idle', 'walk'],
-      effects: ['dust', 'petals', 'steam', 'fireflies'],
-      effectFrames: 4,
-      effectSeed: 'komorebi-house',
     });
     registerFallbackPixelTextures(this);
 
